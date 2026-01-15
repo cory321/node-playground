@@ -13,15 +13,30 @@ export {
   TIER2_CONDITIONS,
   TIER3_EXPANSIONS,
   AGGREGATOR_DOMAINS,
-  TRIAGE_QUERY,
   DEFAULT_SCAN_CONFIG,
+  LEAD_ECONOMICS,
+  CONDITIONAL_CATEGORIES,
   detectCityProfile,
   getCategoriesToScan,
   getTier3Categories,
   isAggregatorDomain,
   getCategoryTier,
+  getLeadEconomics,
+  calculateExpectedMargin,
+  assessCategoryViability,
+  detectGBPOpportunities,
+  prioritizeProviderOutreach,
+  estimateServiceValue,
+  calculateAggregatorDominance,
 } from './tiers';
-export type { CityProfile, ScanConfig, TierConfig } from './tiers';
+export type {
+  CityProfile,
+  ScanConfig,
+  MarketSignals,
+  GBPIssue,
+  CategoryViability,
+  LeadEconomics,
+} from './tiers';
 
 export { analyzeSerpWithClaude, generateTriageAnalysis } from './analyzer';
 export type { CategoryAnalysis, TriageResult } from './analyzer';

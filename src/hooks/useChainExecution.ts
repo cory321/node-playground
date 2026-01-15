@@ -8,10 +8,12 @@ import {
   isResearchNode, 
   isProviderNode, 
   isCategorySelectorNode,
+  isWebDesignerNode,
   DemographicsData,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { callLLM } from '@/api/llm';
+import { getLeadEconomics } from '@/api/serp/tiers';
 
 interface UseChainExecutionProps {
   nodes: NodeData[];
@@ -50,6 +52,17 @@ interface ProviderInputData {
   verdict?: 'strong' | 'maybe' | 'skip';
 }
 
+// Web Designer node input data
+interface WebDesignerInputData {
+  city: string;
+  state: string | null;
+  category: string | null;
+  serpScore?: number;
+  serpQuality?: 'Weak' | 'Medium' | 'Strong';
+  urgency?: 'extreme' | 'high' | 'medium' | 'low';
+  competition?: 'low' | 'moderate' | 'high' | 'extreme';
+}
+
 interface UseChainExecutionReturn {
   executeLLMNode: (nodeId: string) => Promise<string | undefined>;
   executeChain: (startNodeId: string) => Promise<void>;
@@ -57,6 +70,7 @@ interface UseChainExecutionReturn {
   getIncomingLocationData: (nodeId: string) => LocationInputData | null;
   getIncomingCategorySelectorData: (nodeId: string) => CategorySelectorInputData | null;
   getIncomingProviderData: (nodeId: string) => ProviderInputData | null;
+  getIncomingWebDesignerData: (nodeId: string) => WebDesignerInputData | null;
   getDownstreamNodes: (nodeId: string) => string[];
   getUpstreamNodes: (nodeId: string) => string[];
 }
@@ -134,6 +148,10 @@ export function useChainExecution({
             }
             
             return output;
+          }
+          // WebDesignerNode - output the generated prompt
+          if (isWebDesignerNode(n) && n.generatedPrompt) {
+            return n.generatedPrompt;
           }
           return null;
         })
@@ -253,6 +271,68 @@ export function useChainExecution({
     [nodes, connections]
   );
 
+  // Get structured data for Web Designer node input
+  // Can come from: CategorySelectorNode (port-specific), Research node, or Location node
+  const getIncomingWebDesignerData = useCallback(
+    (nodeId: string): WebDesignerInputData | null => {
+      // Find the connection TO this node to check for port-specific routing
+      const incomingConnection = connections.find((c) => c.toId === nodeId);
+      if (!incomingConnection) return null;
+
+      const upstreamNode = nodes.find((n) => n.id === incomingConnection.fromId);
+      if (!upstreamNode) return null;
+
+      // Check if upstream is a CategorySelector with a specific port
+      if (isCategorySelectorNode(upstreamNode) && incomingConnection.fromPort) {
+        const portId = incomingConnection.fromPort;
+        const category = upstreamNode.categories.find((c) => c.id === portId);
+
+        if (category && category.visible && upstreamNode.inputCity) {
+          // Get lead economics for urgency/competition
+          const economics = getLeadEconomics(category.category);
+          
+          return {
+            city: upstreamNode.inputCity,
+            state: upstreamNode.inputState || null,
+            category: category.category,
+            serpScore: category.serpScore,
+            serpQuality: category.serpQuality,
+            urgency: economics?.urgency,
+            competition: economics?.competitionLevel,
+          };
+        }
+      }
+
+      // Check for research node (has category from top opportunity)
+      if (isResearchNode(upstreamNode) && upstreamNode.inputCity) {
+        const topOpp = upstreamNode.topOpportunities[0];
+        const economics = topOpp ? getLeadEconomics(topOpp.category) : null;
+        
+        return {
+          city: upstreamNode.inputCity,
+          state: upstreamNode.inputState || null,
+          category: topOpp?.category || null,
+          serpScore: topOpp?.serpScore,
+          serpQuality: topOpp?.serpQuality,
+          urgency: economics?.urgency,
+          competition: economics?.competitionLevel,
+        };
+      }
+
+      // Fall back to location node (no category)
+      if (isLocationNode(upstreamNode) && upstreamNode.selectedLocation) {
+        return {
+          city: upstreamNode.selectedLocation.name,
+          state: upstreamNode.selectedLocation.state || null,
+          category: null,
+        };
+      }
+
+      return null;
+    },
+    [nodes, connections]
+  );
+
   // Propagate data to downstream output nodes
   const propagateToOutputNodes = useCallback(
     (sourceNodeId: string, responseData: string) => {
@@ -342,6 +422,7 @@ export function useChainExecution({
     getIncomingLocationData,
     getIncomingCategorySelectorData,
     getIncomingProviderData,
+    getIncomingWebDesignerData,
     getDownstreamNodes,
     getUpstreamNodes,
   };

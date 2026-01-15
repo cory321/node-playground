@@ -5,7 +5,7 @@ import { AGGREGATOR_DOMAINS } from './tiers';
 // Category analysis result
 export interface CategoryAnalysis {
   category: string;
-  tier: 'tier1' | 'tier2' | 'tier3';
+  tier: 'tier1' | 'tier2' | 'tier3' | 'conditional';
   serpQuality: 'Weak' | 'Medium' | 'Strong';
   serpScore: number; // 1-10
   competition: 'Low' | 'Medium' | 'High';
@@ -110,7 +110,7 @@ export async function analyzeSerpWithClaude(
   city: string,
   state: string | null,
   signals: SerpSignals,
-  tier: 'tier1' | 'tier2' | 'tier3' = 'tier1'
+  tier: 'tier1' | 'tier2' | 'tier3' | 'conditional' = 'tier1'
 ): Promise<CategoryAnalysis> {
   const prompt = CATEGORY_ANALYSIS_PROMPT.replace('{category}', category)
     .replace('{city}', city)
@@ -165,7 +165,7 @@ export async function analyzeSerpWithClaude(
 function analyzeWithHeuristics(
   category: string,
   signals: SerpSignals,
-  tier: 'tier1' | 'tier2' | 'tier3'
+  tier: 'tier1' | 'tier2' | 'tier3' | 'conditional'
 ): CategoryAnalysis {
   // SERP Quality based on aggregator positions
   let serpQuality: 'Weak' | 'Medium' | 'Strong' = 'Medium';

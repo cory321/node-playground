@@ -14,6 +14,7 @@ import { DeepResearchNodeData, HoveredPort, ResearchScanMode } from '@/types/nod
 import { BaseNode } from '../base';
 import { ScanModeSelector } from './ScanModeSelector';
 import { CityProfileDisplay } from './CityProfileDisplay';
+import { CategoriesPreview } from './CategoriesPreview';
 import { BudgetIndicator } from './BudgetIndicator';
 import { ResultsTable } from './ResultsTable';
 import { OpportunitySummary } from './OpportunitySummary';
@@ -74,6 +75,7 @@ export function DeepResearchNode({
   incomingData,
 }: DeepResearchNodeProps) {
   const [profileExpanded, setProfileExpanded] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
   // Get city profile from incoming demographics
   const { profile } = useCityProfile({
@@ -83,7 +85,7 @@ export function DeepResearchNode({
   });
 
   // Get category counts for display
-  const { tier1, tier2 } = getCategoriesToScan(profile, DEFAULT_SCAN_CONFIG);
+  const { tier1, tier2, conditional } = getCategoriesToScan(profile, DEFAULT_SCAN_CONFIG);
 
   // Research hook
   const { runTriageScan, runFullScan, stopScan, isScanning, hasApiKey } =
@@ -227,6 +229,15 @@ export function DeepResearchNode({
             onToggleExpanded={() => setProfileExpanded(!profileExpanded)}
           />
 
+          {/* Categories Preview */}
+          <CategoriesPreview
+            tier1={tier1}
+            tier2={tier2}
+            conditional={conditional}
+            expanded={categoriesExpanded}
+            onToggle={() => setCategoriesExpanded(!categoriesExpanded)}
+          />
+
           {/* Scan Mode Selector */}
           <ScanModeSelector
             mode={node.scanMode}
@@ -234,6 +245,7 @@ export function DeepResearchNode({
             disabled={isScanning}
             tier1Count={tier1.length}
             tier2Count={tier2.length}
+            conditionalCount={conditional.length}
           />
 
           {/* Run/Stop Button */}

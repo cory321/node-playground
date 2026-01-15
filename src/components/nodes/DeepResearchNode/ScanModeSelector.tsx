@@ -8,6 +8,7 @@ interface ScanModeSelectorProps {
   disabled?: boolean;
   tier1Count: number;
   tier2Count: number;
+  conditionalCount: number;
 }
 
 export function ScanModeSelector({
@@ -16,8 +17,9 @@ export function ScanModeSelector({
   disabled = false,
   tier1Count,
   tier2Count,
+  conditionalCount,
 }: ScanModeSelectorProps) {
-  const totalFullScans = tier1Count + tier2Count;
+  const totalFullScans = tier1Count + tier2Count + conditionalCount;
 
   return (
     <div className="flex gap-2">

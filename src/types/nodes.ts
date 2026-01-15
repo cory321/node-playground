@@ -6,6 +6,7 @@ export const NODE_TYPES = {
 	RESEARCH: 'research',
 	PROVIDERS: 'providers',
 	CATEGORY_SELECTOR: 'category-selector',
+	WEB_DESIGNER: 'web-designer',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -99,7 +100,7 @@ export type ResearchScanMode = 'triage' | 'full';
 // Category analysis result from SERP research
 export interface CategoryAnalysisResult {
 	category: string;
-	tier: 'tier1' | 'tier2' | 'tier3';
+	tier: 'tier1' | 'tier2' | 'tier3' | 'conditional';
 	serpQuality: 'Weak' | 'Medium' | 'Strong';
 	serpScore: number;
 	competition: 'Low' | 'Medium' | 'High';
@@ -245,8 +246,31 @@ export interface CategorySelectorNodeData extends BaseNodeData {
 	lastUpdatedAt: number | null;
 }
 
+// Web Designer Node specific data
+export interface WebDesignerNodeData extends BaseNodeData {
+	type: 'web-designer';
+	status: NodeStatus;
+	error: string | null;
+	// LLM Provider Selection
+	provider: string;
+	useReasoning: boolean;
+	// Inputs (from connected nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputSerpScore: number | null;
+	inputSerpQuality: 'Weak' | 'Medium' | 'Strong' | null;
+	inputUrgency: 'extreme' | 'high' | 'medium' | 'low' | null;
+	inputCompetition: 'low' | 'moderate' | 'high' | 'extreme' | null;
+	// Generated output
+	generatedPrompt: string | null;
+	generatedBusinessName: string | null;
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
-export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData;
+export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData | WebDesignerNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -271,6 +295,10 @@ export function isProviderNode(node: NodeData): node is ProviderDiscoveryNodeDat
 
 export function isCategorySelectorNode(node: NodeData): node is CategorySelectorNodeData {
 	return node.type === 'category-selector';
+}
+
+export function isWebDesignerNode(node: NodeData): node is WebDesignerNodeData {
+	return node.type === 'web-designer';
 }
 
 // Default node dimensions
@@ -304,6 +332,11 @@ export const NODE_DEFAULTS = {
 		width: 420,
 		height: 480,
 		color: '#8b5cf6', // Violet/purple
+	},
+	'web-designer': {
+		width: 400,
+		height: 420,
+		color: '#ec4899', // Pink
 	},
 } as const;
 

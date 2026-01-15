@@ -34,10 +34,19 @@ const VERDICT_STYLES = {
 };
 
 // Tier badge styles
-const TIER_STYLES = {
+const TIER_STYLES: Record<string, string> = {
   tier1: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   tier2: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
   tier3: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+  conditional: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+};
+
+// Tier label display
+const TIER_LABELS: Record<string, string> = {
+  tier1: 'T1',
+  tier2: 'T2',
+  tier3: 'T3',
+  conditional: 'C',
 };
 
 export function ResultsTable({
@@ -137,7 +146,7 @@ export function ResultsTable({
                 <span
                   className={`px-1 py-0.5 text-[9px] rounded border shrink-0 ${tierStyle}`}
                 >
-                  T{result.tier.replace('tier', '')}
+                  {TIER_LABELS[result.tier] || 'T?'}
                 </span>
                 {result.fromCache && (
                   <Database size={10} className="text-emerald-400 shrink-0" />

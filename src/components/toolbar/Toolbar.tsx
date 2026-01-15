@@ -6,6 +6,7 @@ import {
   Search,
   Layers,
   Users,
+  Palette,
   Settings,
   Save,
   FolderOpen,
@@ -22,6 +23,7 @@ interface ToolbarProps {
   onAddResearchNode: () => void;
   onAddCategorySelectorNode: () => void;
   onAddProviderNode: () => void;
+  onAddWebDesignerNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -40,6 +42,7 @@ export function Toolbar({
   onAddResearchNode,
   onAddCategorySelectorNode,
   onAddProviderNode,
+  onAddWebDesignerNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -99,6 +102,14 @@ export function Toolbar({
           icon={<Users size={20} />}
           label="Add Provider Discovery"
           className="bg-teal-600 hover:bg-teal-500 shadow-lg shadow-teal-500/20"
+        />
+
+        {/* Add Web Designer Node */}
+        <ToolbarButton
+          onClick={onAddWebDesignerNode}
+          icon={<Palette size={20} />}
+          label="Add Web Designer"
+          className="bg-pink-600 hover:bg-pink-500 shadow-lg shadow-pink-500/20"
         />
 
         <div className="h-6 w-px bg-slate-700 mx-1" />

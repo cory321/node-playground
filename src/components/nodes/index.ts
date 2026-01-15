@@ -5,3 +5,4 @@ export { LocationNode } from './LocationNode';
 export { DeepResearchNode } from './DeepResearchNode';
 export { ProviderDiscoveryNode } from './ProviderDiscoveryNode';
 export { CategorySelectorNode } from './CategorySelectorNode';
+export { WebDesignerNode } from './WebDesignerNode';

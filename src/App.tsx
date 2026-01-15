@@ -102,6 +102,7 @@ function App() {
     getIncomingLocationData, 
     getIncomingCategorySelectorData,
     getIncomingProviderData,
+    getIncomingWebDesignerData,
   } = useChainExecution({
     nodes,
     setNodes,
@@ -210,6 +211,15 @@ function App() {
       'category-selector',
       (window.innerWidth / 2 - transform.x - 210) / transform.scale,
       (window.innerHeight / 2 - transform.y - 240) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addWebDesignerNode = useCallback(() => {
+    const node = createNode(
+      'web-designer',
+      (window.innerWidth / 2 - transform.x - 200) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 210) / transform.scale
     );
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
@@ -394,6 +404,7 @@ function App() {
         onAddResearchNode={addResearchNode}
         onAddCategorySelectorNode={addCategorySelectorNode}
         onAddProviderNode={addProviderNode}
+        onAddWebDesignerNode={addWebDesignerNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -450,6 +461,7 @@ function App() {
           getIncomingLocationData={getIncomingLocationData}
           getIncomingCategorySelectorData={getIncomingCategorySelectorData}
           getIncomingProviderData={getIncomingProviderData}
+          getIncomingWebDesignerData={getIncomingWebDesignerData}
           getPortConnections={getPortConnections}
         />
       </div>

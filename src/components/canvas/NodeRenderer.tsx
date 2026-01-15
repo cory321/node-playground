@@ -9,6 +9,7 @@ import {
   isResearchNode, 
   isProviderNode,
   isCategorySelectorNode,
+  isWebDesignerNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { LLMNode } from '../nodes/LLMNode';
@@ -17,6 +18,7 @@ import { LocationNode } from '../nodes/LocationNode';
 import { DeepResearchNode } from '../nodes/DeepResearchNode';
 import { ProviderDiscoveryNode } from '../nodes/ProviderDiscoveryNode';
 import { CategorySelectorNode } from '../nodes/CategorySelectorNode';
+import { WebDesignerNode } from '../nodes/WebDesignerNode';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -62,6 +64,15 @@ interface NodeRendererProps {
     city: string;
     state: string | null;
   } | null;
+  getIncomingWebDesignerData?: (nodeId: string) => {
+    city: string;
+    state: string | null;
+    category: string | null;
+    serpScore?: number;
+    serpQuality?: 'Weak' | 'Medium' | 'Strong';
+    urgency?: 'extreme' | 'high' | 'medium' | 'low';
+    competition?: 'low' | 'moderate' | 'high' | 'extreme';
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
 }
 
@@ -89,6 +100,7 @@ export function NodeRenderer({
   getIncomingLocationData,
   getIncomingCategorySelectorData,
   getIncomingProviderData,
+  getIncomingWebDesignerData,
   getPortConnections,
 }: NodeRendererProps) {
   const isConnectedInput = (nodeId: string) =>
@@ -243,6 +255,32 @@ export function NodeRenderer({
               connectingTo={connectingTo}
               incomingData={getIncomingCategorySelectorData?.(node.id) ?? null}
               getPortConnections={(portId) => getPortConnections(node.id, portId)}
+            />
+          );
+        }
+
+        if (isWebDesignerNode(node)) {
+          return (
+            <WebDesignerNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingWebDesignerData?.(node.id) ?? null}
             />
           );
         }

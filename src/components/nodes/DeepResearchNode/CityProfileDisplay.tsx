@@ -8,7 +8,9 @@ import {
   Tag,
   ChevronDown,
   ChevronUp,
+  Target,
 } from 'lucide-react';
+import { TIER1_CATEGORIES } from '@/api/serp';
 
 interface CityProfileDisplayProps {
   cityName: string;
@@ -92,17 +94,35 @@ export function CityProfileDisplay({
             </div>
           )}
 
+          {/* Tier 1 Categories (Always Scanned) */}
+          <div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Target size={10} className="text-blue-400" />
+              Core Categories (Always Scanned)
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {TIER1_CATEGORIES.map((category) => (
+                <span
+                  key={category}
+                  className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300"
+                >
+                  {category}
+                </span>
+              ))}
+            </div>
+          </div>
+
           {/* Tier 2 Categories */}
           {hasTier2 && (
             <div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">
-                Tier 2 Categories (Conditional)
+                Market-Specific Categories
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {tier2Categories.map((category) => (
                   <span
                     key={category}
-                    className="px-2 py-1 bg-orange-500/10 border border-orange-500/20 rounded text-xs text-orange-300"
+                    className="px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded text-xs text-purple-300"
                   >
                     {category}
                   </span>

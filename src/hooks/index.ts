@@ -6,3 +6,4 @@ export { useChainExecution } from './useChainExecution';
 export { useCityProfile } from './useCityProfile';
 export { useDeepResearch } from './useDeepResearch';
 export { useProviderDiscovery } from './useProviderDiscovery';
+export { usePromptGeneration } from './usePromptGeneration';

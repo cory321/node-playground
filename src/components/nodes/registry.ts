@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Brain, Monitor, MapPin, Search, Users, Layers, LucideIcon } from 'lucide-react';
+import { Brain, Monitor, MapPin, Search, Users, Layers, Palette, LucideIcon } from 'lucide-react';
 import {
   NodeType,
   NodeData,
@@ -9,6 +9,7 @@ import {
   DeepResearchNodeData,
   ProviderDiscoveryNodeData,
   CategorySelectorNodeData,
+  WebDesignerNodeData,
   NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -215,6 +216,42 @@ registry.set('category-selector', {
     inputState: null,
     categories: [],
     lastUpdatedAt: null,
+  }),
+});
+
+// Register Web Designer node type
+registry.set('web-designer', {
+  type: 'web-designer',
+  label: 'Web Designer',
+  icon: Palette,
+  color: NODE_DEFAULTS['web-designer'].color,
+  defaultWidth: NODE_DEFAULTS['web-designer'].width,
+  defaultHeight: NODE_DEFAULTS['web-designer'].height,
+  hasInputPort: true,
+  hasOutputPort: true,
+  createDefaultData: (id: string, x: number, y: number): WebDesignerNodeData => ({
+    id,
+    x,
+    y,
+    width: NODE_DEFAULTS['web-designer'].width,
+    height: NODE_DEFAULTS['web-designer'].height,
+    title: 'Web Designer',
+    color: NODE_DEFAULTS['web-designer'].color,
+    type: 'web-designer',
+    status: 'idle',
+    error: null,
+    provider: 'gemini-pro',
+    useReasoning: false,
+    inputCity: null,
+    inputState: null,
+    inputCategory: null,
+    inputSerpScore: null,
+    inputSerpQuality: null,
+    inputUrgency: null,
+    inputCompetition: null,
+    generatedPrompt: null,
+    generatedBusinessName: null,
+    lastGeneratedAt: null,
   }),
 });
 

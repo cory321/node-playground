@@ -168,11 +168,11 @@ export function useDeepResearch({
       });
 
       try {
-        const { tier1, tier2, total } = getCategoriesToScan(
+        const { tier1, tier2, conditional, total } = getCategoriesToScan(
           profile,
           DEFAULT_SCAN_CONFIG
         );
-        const allCategories = [...tier1, ...tier2];
+        const allCategories = [...tier1, ...tier2, ...conditional];
 
         updateProgress({
           totalCount: total,
