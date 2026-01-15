@@ -7,6 +7,7 @@ import { CanvasTransform, DragState, ResizeState, Point, CANVAS_CONSTANTS } from
 import { Toolbar } from '@/components/toolbar';
 import { GridBackground, ConnectionLayer, NodeRenderer, EmptyState } from '@/components/canvas';
 import { SettingsModal, SaveModal, LoadModal } from '@/components/modals';
+import { ComparisonPanel } from '@/components/nodes/LocationNode';
 
 // Hooks
 import { useChainExecution } from '@/hooks/useChainExecution';
@@ -14,6 +15,9 @@ import { usePersistence } from '@/hooks/usePersistence';
 import { useNodeDrag } from '@/hooks/useNodeDrag';
 import { useNodeResize } from '@/hooks/useNodeResize';
 import { useConnectionHandlers } from '@/hooks/useConnectionHandlers';
+
+// Contexts
+import { useComparison } from '@/contexts';
 
 // Node registry for creating new nodes
 import { createNode } from '@/components/nodes/registry';
@@ -75,6 +79,9 @@ function App() {
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  // Comparison context
+  const { locations: comparisonLocations, togglePanel: toggleComparisonPanel } = useComparison();
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Node CRUD operations
@@ -88,7 +95,7 @@ function App() {
   }, []);
 
   // Chain execution hook
-  const { executeLLMNode, getIncomingData } = useChainExecution({
+  const { executeLLMNode, getIncomingData, getIncomingLocationData } = useChainExecution({
     nodes,
     setNodes,
     connections,
@@ -157,6 +164,15 @@ function App() {
       'location',
       (window.innerWidth / 2 - transform.x - 200) / transform.scale,
       (window.innerHeight / 2 - transform.y - 190) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addResearchNode = useCallback(() => {
+    const node = createNode(
+      'research',
+      (window.innerWidth / 2 - transform.x - 240) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 300) / transform.scale
     );
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
@@ -259,11 +275,14 @@ function App() {
         onAddLLMNode={addLLMNode}
         onAddOutputNode={addOutputNode}
         onAddLocationNode={addLocationNode}
+        onAddResearchNode={addResearchNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
         onExport={exportSetup}
         onImport={importSetup}
+        onToggleCompare={toggleComparisonPanel}
+        comparisonCount={comparisonLocations.length}
         nodeCount={nodes.length}
         connectionCount={connections.length}
       />
@@ -307,6 +326,7 @@ function App() {
           connectingFrom={connectingFrom}
           connectingTo={connectingTo}
           getIncomingData={getIncomingData}
+          getIncomingLocationData={getIncomingLocationData}
         />
       </div>
 
@@ -334,6 +354,9 @@ function App() {
         onLoad={loadSetup}
         onDelete={deleteSetup}
       />
+
+      {/* Comparison Panel */}
+      <ComparisonPanel />
     </div>
   );
 }

@@ -3,11 +3,13 @@ import {
   Brain,
   Monitor,
   MapPin,
+  Search,
   Settings,
   Save,
   FolderOpen,
   Download,
   Upload,
+  BarChart3,
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
 
@@ -15,11 +17,14 @@ interface ToolbarProps {
   onAddLLMNode: () => void;
   onAddOutputNode: () => void;
   onAddLocationNode: () => void;
+  onAddResearchNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onToggleCompare?: () => void;
+  comparisonCount?: number;
   nodeCount: number;
   connectionCount: number;
 }
@@ -28,11 +33,14 @@ export function Toolbar({
   onAddLLMNode,
   onAddOutputNode,
   onAddLocationNode,
+  onAddResearchNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
   onExport,
   onImport,
+  onToggleCompare,
+  comparisonCount = 0,
   nodeCount,
   connectionCount,
 }: ToolbarProps) {
@@ -63,7 +71,32 @@ export function Toolbar({
           className="bg-sky-600 hover:bg-sky-500 shadow-lg shadow-sky-500/20"
         />
 
+        {/* Add Research Node */}
+        <ToolbarButton
+          onClick={onAddResearchNode}
+          icon={<Search size={20} />}
+          label="Add Research Node"
+          className="bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20"
+        />
+
         <div className="h-6 w-px bg-slate-700 mx-1" />
+
+        {/* Compare Locations */}
+        {onToggleCompare && (
+          <div className="relative">
+            <ToolbarButton
+              onClick={onToggleCompare}
+              icon={<BarChart3 size={20} />}
+              label="Compare Locations"
+              className="hover:text-amber-400"
+            />
+            {comparisonCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-amber-500 text-slate-900 text-[10px] font-bold rounded-full flex items-center justify-center">
+                {comparisonCount}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Settings */}
         <ToolbarButton

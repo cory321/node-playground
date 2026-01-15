@@ -61,8 +61,14 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -72,5 +78,5 @@ body {
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100%;
 }

@@ -115,6 +115,8 @@ export function NodesProvider({ children, initialNodes = DEFAULT_NODES }: NodesP
         color: defaults.color,
         type: 'location',
         selectedLocation: null,
+        demographicsStatus: 'idle',
+        demographicsError: null,
       } as LocationNodeData;
     }
 

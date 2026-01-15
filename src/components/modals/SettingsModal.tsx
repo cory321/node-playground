@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { Settings, Eye, EyeOff, Check, AlertCircle, MapPin } from 'lucide-react';
 import { Modal } from './Modal';
 import { getApiKeys, saveApiKeys } from '@/api/llm';
+import { getCensusApiKey, saveCensusApiKey } from '@/api/census';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,20 +11,24 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [keys, setKeys] = useState({ anthropic: '', google: '', openai: '' });
+  const [censusKey, setCensusKey] = useState('');
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showGoogleKey, setShowGoogleKey] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [showCensusKey, setShowCensusKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setKeys(getApiKeys());
+      setCensusKey(getCensusApiKey());
       setSaved(false);
     }
   }, [isOpen]);
 
   const handleSave = () => {
     saveApiKeys(keys);
+    saveCensusApiKey(censusKey);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -136,6 +141,50 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
             >
               aistudio.google.com
+            </a>
+          </p>
+        </div>
+
+        {/* Section Divider */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 h-px bg-slate-700/50" />
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <MapPin size={12} />
+            <span className="text-[10px] uppercase tracking-[0.15em]">Data APIs</span>
+          </div>
+          <div className="flex-1 h-px bg-slate-700/50" />
+        </div>
+
+        {/* Census Bureau API Key */}
+        <div>
+          <label className="block text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-2">
+            US Census Bureau API Key (Demographics)
+          </label>
+          <div className="relative">
+            <input
+              type={showCensusKey ? 'text' : 'password'}
+              value={censusKey}
+              onChange={(e) => setCensusKey(e.target.value)}
+              placeholder="Your Census API key..."
+              className="w-full bg-slate-950/60 border border-slate-700/50 rounded-xl px-4 py-3 pr-12 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all font-mono"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCensusKey(!showCensusKey)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              {showCensusKey ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-slate-600">
+            Free API key for location demographics. Get yours from{' '}
+            <a
+              href="https://api.census.gov/data/key_signup.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:text-sky-300 underline underline-offset-2"
+            >
+              census.gov
             </a>
           </p>
         </div>

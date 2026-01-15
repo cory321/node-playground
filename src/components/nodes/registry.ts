@@ -1,11 +1,12 @@
 import { ComponentType } from 'react';
-import { Brain, Monitor, MapPin, LucideIcon } from 'lucide-react';
+import { Brain, Monitor, MapPin, Search, LucideIcon } from 'lucide-react';
 import {
   NodeType,
   NodeData,
   LLMNodeData,
   OutputNodeData,
   LocationNodeData,
+  DeepResearchNodeData,
   NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -107,6 +108,51 @@ registry.set('location', {
     color: NODE_DEFAULTS.location.color,
     type: 'location',
     selectedLocation: null,
+    demographicsStatus: 'idle',
+    demographicsError: null,
+  }),
+});
+
+// Register Deep Research node type
+registry.set('research', {
+  type: 'research',
+  label: 'Deep Research',
+  icon: Search,
+  color: NODE_DEFAULTS.research.color,
+  defaultWidth: NODE_DEFAULTS.research.width,
+  defaultHeight: NODE_DEFAULTS.research.height,
+  hasInputPort: true,
+  hasOutputPort: true,
+  createDefaultData: (id: string, x: number, y: number): DeepResearchNodeData => ({
+    id,
+    x,
+    y,
+    width: NODE_DEFAULTS.research.width,
+    height: NODE_DEFAULTS.research.height,
+    title: 'Deep Research',
+    text: '',
+    color: NODE_DEFAULTS.research.color,
+    type: 'research',
+    scanMode: 'full',
+    status: 'idle',
+    error: null,
+    inputCity: null,
+    inputState: null,
+    cityTraits: [],
+    maxSearches: 12,
+    enableDeepDive: true,
+    triageResult: null,
+    categoryResults: [],
+    topOpportunities: [],
+    skipList: [],
+    progress: {
+      currentCategory: null,
+      completedCount: 0,
+      totalCount: 0,
+      cacheHits: 0,
+      searchesUsed: 0,
+    },
+    lastScanAt: null,
   }),
 });
 

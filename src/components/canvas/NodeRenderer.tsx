@@ -1,9 +1,10 @@
 import React from 'react';
-import { NodeData, HoveredPort, isLLMNode, isOutputNode, isLocationNode } from '@/types/nodes';
+import { NodeData, HoveredPort, isLLMNode, isOutputNode, isLocationNode, isResearchNode } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { LLMNode } from '../nodes/LLMNode';
 import { OutputNode } from '../nodes/OutputNode';
 import { LocationNode } from '../nodes/LocationNode';
+import { DeepResearchNode } from '../nodes/DeepResearchNode';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -24,6 +25,18 @@ interface NodeRendererProps {
   connectingFrom: string | null;
   connectingTo: string | null;
   getIncomingData: (nodeId: string) => string | null;
+  getIncomingLocationData: (nodeId: string) => {
+    city: string;
+    state: string | null;
+    lat?: number;
+    lng?: number;
+    demographics?: {
+      population: number | null;
+      medianHouseholdIncome: number | null;
+      homeownershipRate: number | null;
+      medianHomeValue: number | null;
+    };
+  } | null;
 }
 
 export function NodeRenderer({
@@ -45,6 +58,7 @@ export function NodeRenderer({
   connectingFrom,
   connectingTo,
   getIncomingData,
+  getIncomingLocationData,
 }: NodeRendererProps) {
   const isConnectedInput = (nodeId: string) =>
     connections.some((c) => c.toId === nodeId);
@@ -120,6 +134,32 @@ export function NodeRenderer({
               onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
               connectingFrom={connectingFrom}
               connectingTo={connectingTo}
+            />
+          );
+        }
+
+        if (isResearchNode(node)) {
+          return (
+            <DeepResearchNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingLocationData(node.id)}
             />
           );
         }
