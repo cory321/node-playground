@@ -1,3 +1,13 @@
 // Re-export Supabase client and types
 export { supabase, hasSupabase } from './client';
-export type { SerpCacheRow, ScanResultRow } from './client';
+export type { SerpCacheRow, ScanResultRow, ProjectRow } from './client';
+
+// Re-export project persistence functions
+export {
+  getProjects,
+  getProject,
+  saveProject,
+  updateProject,
+  deleteProject,
+} from './projects';
+export type { ProjectData } from './projects';

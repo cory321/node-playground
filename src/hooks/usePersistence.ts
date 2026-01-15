@@ -3,8 +3,13 @@ import { NodeData } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { CanvasTransform } from '@/types/canvas';
 import { SavedSetup } from '@/types/api';
-
-const STORAGE_KEY = 'nodeBuilderSetups';
+import {
+  getProjects,
+  saveProject,
+  deleteProject as deleteProjectApi,
+  hasSupabase,
+  ProjectData,
+} from '@/api/supabase';
 
 interface UsePersistenceProps {
   nodes: NodeData[];
@@ -17,11 +22,28 @@ interface UsePersistenceProps {
 
 interface UsePersistenceReturn {
   savedSetups: SavedSetup[];
-  saveSetup: (name: string) => void;
+  isLoading: boolean;
+  isSaving: boolean;
+  error: string | null;
+  saveSetup: (name: string) => Promise<boolean>;
   loadSetup: (setup: SavedSetup) => void;
-  deleteSetup: (id: string) => void;
+  deleteSetup: (id: string) => Promise<boolean>;
   exportSetup: () => void;
   importSetup: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  refreshSetups: () => Promise<void>;
+  hasCloudStorage: boolean;
+}
+
+// Convert ProjectData to SavedSetup format for backwards compatibility
+function projectToSetup(project: ProjectData): SavedSetup {
+  return {
+    id: project.id,
+    name: project.name,
+    createdAt: project.createdAt,
+    nodes: project.nodes as unknown[],
+    connections: project.connections as unknown[],
+    transform: project.transform ?? undefined,
+  };
 }
 
 export function usePersistence({
@@ -33,41 +55,73 @@ export function usePersistence({
   setTransform,
 }: UsePersistenceProps): UsePersistenceReturn {
   const [savedSetups, setSavedSetups] = useState<SavedSetup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load saved setups from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setSavedSetups(JSON.parse(saved));
-      } catch (err) {
-        console.error('Failed to parse saved setups:', err);
-      }
+  const hasCloudStorage = hasSupabase();
+
+  // Load saved setups from Supabase on mount
+  const refreshSetups = useCallback(async () => {
+    if (!hasCloudStorage) {
+      setIsLoading(false);
+      return;
     }
-  }, []);
 
-  // Save current setup
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const projects = await getProjects();
+      setSavedSetups(projects.map(projectToSetup));
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+      setError('Failed to load saved projects');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasCloudStorage]);
+
+  useEffect(() => {
+    refreshSetups();
+  }, [refreshSetups]);
+
+  // Save current setup to Supabase
   const saveSetup = useCallback(
-    (name: string) => {
-      if (!name.trim()) return;
+    async (name: string): Promise<boolean> => {
+      if (!name.trim()) return false;
 
-      const newSetup: SavedSetup = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        createdAt: new Date().toISOString(),
-        nodes: nodes,
-        connections: connections,
-        transform: transform,
-      };
+      if (!hasCloudStorage) {
+        setError('Supabase not configured. Please add credentials to .env');
+        return false;
+      }
 
-      const updatedSetups = [...savedSetups, newSetup];
-      setSavedSetups(updatedSetups);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSetups));
+      setIsSaving(true);
+      setError(null);
+
+      try {
+        const result = await saveProject(name.trim(), nodes, connections, transform);
+
+        if (!result) {
+          setError('Failed to save project');
+          return false;
+        }
+
+        // Refresh the list to include the new project
+        await refreshSetups();
+        return true;
+      } catch (err) {
+        console.error('Failed to save project:', err);
+        setError('Failed to save project');
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
     },
-    [nodes, connections, transform, savedSetups]
+    [nodes, connections, transform, hasCloudStorage, refreshSetups]
   );
 
-  // Load a setup
+  // Load a setup (synchronous - data already fetched)
   const loadSetup = useCallback(
     (setup: SavedSetup) => {
       setNodes(setup.nodes as NodeData[]);
@@ -79,14 +133,34 @@ export function usePersistence({
     [setNodes, setConnections, setTransform]
   );
 
-  // Delete a setup
+  // Delete a setup from Supabase
   const deleteSetup = useCallback(
-    (id: string) => {
-      const updatedSetups = savedSetups.filter((s) => s.id !== id);
-      setSavedSetups(updatedSetups);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSetups));
+    async (id: string): Promise<boolean> => {
+      if (!hasCloudStorage) {
+        setError('Supabase not configured');
+        return false;
+      }
+
+      setError(null);
+
+      try {
+        const success = await deleteProjectApi(id);
+
+        if (!success) {
+          setError('Failed to delete project');
+          return false;
+        }
+
+        // Update local state immediately
+        setSavedSetups((prev) => prev.filter((s) => s.id !== id));
+        return true;
+      } catch (err) {
+        console.error('Failed to delete project:', err);
+        setError('Failed to delete project');
+        return false;
+      }
     },
-    [savedSetups]
+    [hasCloudStorage]
   );
 
   // Export current setup to JSON file
@@ -138,11 +212,16 @@ export function usePersistence({
 
   return {
     savedSetups,
+    isLoading,
+    isSaving,
+    error,
     saveSetup,
     loadSetup,
     deleteSetup,
     exportSetup,
     importSetup,
+    refreshSetups,
+    hasCloudStorage,
   };
 }
 

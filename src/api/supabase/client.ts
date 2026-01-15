@@ -44,3 +44,14 @@ export interface ScanResultRow {
   skip_list: Record<string, unknown>[] | null;
   created_at: string;
 }
+
+// Database types for project persistence
+export interface ProjectRow {
+  id: string;
+  name: string;
+  nodes: Record<string, unknown>[];
+  connections: Record<string, unknown>[];
+  transform: { x: number; y: number; scale: number } | null;
+  created_at: string;
+  updated_at: string;
+}

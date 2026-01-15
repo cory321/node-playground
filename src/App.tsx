@@ -102,15 +102,26 @@ function App() {
   });
 
   // Persistence hook
-  const { savedSetups, saveSetup, loadSetup, deleteSetup, exportSetup, importSetup } =
-    usePersistence({
-      nodes,
-      setNodes,
-      connections,
-      setConnections,
-      transform,
-      setTransform,
-    });
+  const {
+    savedSetups,
+    isLoading: isLoadingProjects,
+    isSaving,
+    error: persistenceError,
+    saveSetup,
+    loadSetup,
+    deleteSetup,
+    exportSetup,
+    importSetup,
+    refreshSetups,
+    hasCloudStorage,
+  } = usePersistence({
+    nodes,
+    setNodes,
+    connections,
+    setConnections,
+    transform,
+    setTransform,
+  });
 
   // Drag hook
   const { startDrag, updateDrag } = useNodeDrag({
@@ -345,6 +356,9 @@ function App() {
         onSave={saveSetup}
         nodeCount={nodes.length}
         connectionCount={connections.length}
+        isSaving={isSaving}
+        error={persistenceError}
+        hasCloudStorage={hasCloudStorage}
       />
 
       <LoadModal
@@ -353,6 +367,10 @@ function App() {
         savedSetups={savedSetups}
         onLoad={loadSetup}
         onDelete={deleteSetup}
+        onRefresh={refreshSetups}
+        isLoading={isLoadingProjects}
+        error={persistenceError}
+        hasCloudStorage={hasCloudStorage}
       />
 
       {/* Comparison Panel */}
