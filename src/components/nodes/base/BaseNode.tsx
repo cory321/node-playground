@@ -50,6 +50,9 @@ interface BaseNodeProps {
 
   // Footer extras
   footerExtra?: ReactNode;
+
+  // Extra ports rendered outside the main card (for multi-port nodes)
+  extraPorts?: ReactNode;
 }
 
 export function BaseNode({
@@ -82,6 +85,7 @@ export function BaseNode({
   hoverBorderClass = 'group-hover:border-slate-600/50',
   resizeHoverColor = 'hover:text-indigo-400',
   footerExtra,
+  extraPorts,
 }: BaseNodeProps) {
   const isInputActive = connectingFrom !== null && connectingFrom !== node.id;
   const isOutputActive =
@@ -127,6 +131,9 @@ export function BaseNode({
           isActive={isOutputActive}
         />
       )}
+
+      {/* Extra Ports (for multi-port nodes, rendered outside overflow container) */}
+      {extraPorts}
 
       {/* Resize Handle */}
       <ResizeHandle onMouseDown={onResizeStart} hoverColor={resizeHoverColor} />

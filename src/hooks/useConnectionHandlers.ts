@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { Connection } from '@/types/connections';
+import { NodeData } from '@/types/nodes';
 
 interface UseConnectionHandlersProps {
   connections: Connection[];
@@ -8,6 +9,7 @@ interface UseConnectionHandlersProps {
   setConnectingFrom: (id: string | null) => void;
   connectingTo: string | null;
   setConnectingTo: (id: string | null) => void;
+  nodes?: NodeData[];
 }
 
 interface UseConnectionHandlersReturn {
@@ -25,6 +27,7 @@ export function useConnectionHandlers({
   setConnectingFrom,
   connectingTo,
   setConnectingTo,
+  nodes = [],
 }: UseConnectionHandlersProps): UseConnectionHandlersReturn {
   // Start connection from output port
   const startConnectionFromOutput = useCallback(
@@ -67,15 +70,24 @@ export function useConnectionHandlers({
           (c) => c.fromId === connectingFrom && c.toId === toId
         );
         if (!exists) {
+          // Check if target is a ProviderDiscovery node (single input only)
+          const targetNode = nodes.find((n) => n.id === toId);
+          const isProviderNode = targetNode?.type === 'providers';
+
+          // For ProviderDiscovery nodes, replace any existing input connection
+          const filtered = isProviderNode
+            ? connections.filter((c) => c.toId !== toId)
+            : connections;
+
           setConnections([
-            ...connections,
+            ...filtered,
             { id: `c-${Date.now()}`, fromId: connectingFrom, toId },
           ]);
         }
       }
       setConnectingFrom(null);
     },
-    [connectingFrom, connections, setConnections, setConnectingFrom]
+    [connectingFrom, connections, setConnections, setConnectingFrom, nodes]
   );
 
   // Complete connection to output port
@@ -86,15 +98,24 @@ export function useConnectionHandlers({
           (c) => c.fromId === fromId && c.toId === connectingTo
         );
         if (!exists) {
+          // Check if target is a ProviderDiscovery node (single input only)
+          const targetNode = nodes.find((n) => n.id === connectingTo);
+          const isProviderNode = targetNode?.type === 'providers';
+
+          // For ProviderDiscovery nodes, replace any existing input connection
+          const filtered = isProviderNode
+            ? connections.filter((c) => c.toId !== connectingTo)
+            : connections;
+
           setConnections([
-            ...connections,
+            ...filtered,
             { id: `c-${Date.now()}`, fromId, toId: connectingTo },
           ]);
         }
       }
       setConnectingTo(null);
     },
-    [connectingTo, connections, setConnections, setConnectingTo]
+    [connectingTo, connections, setConnections, setConnectingTo, nodes]
   );
 
   // Cancel any in-progress connection

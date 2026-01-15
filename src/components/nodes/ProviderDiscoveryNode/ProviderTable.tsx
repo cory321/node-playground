@@ -42,14 +42,20 @@ function ProviderRow({
         />
 
         {/* Provider Name */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
           <span
-            className={`text-xs font-medium truncate block ${
+            className={`text-xs font-medium truncate ${
               provider.contacted ? 'text-slate-400 line-through' : 'text-slate-200'
             }`}
           >
             {provider.name}
           </span>
+          {/* Missing Website Badge - Business Opportunity */}
+          {!provider.website && (
+            <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-medium bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/40">
+              Missing GBP Website
+            </span>
+          )}
         </div>
 
         {/* Rating */}

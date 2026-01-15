@@ -7,16 +7,25 @@ interface CategoryRowProps {
   item: CategoryItem;
   onToggleVisible: (id: string) => void;
   isConnected: boolean;
+  rank?: number; // 1-3 for top opportunities
 }
 
 /**
  * CategoryRow - Displays a single category with visibility toggle
  * Shows: [toggle] CategoryName [SerpBadge] $LeadValue [VerdictIcon] [ConnectionIndicator]
  */
+// Rank badge colors for top 3
+const RANK_COLORS = {
+  1: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
+  2: { bg: 'bg-slate-400/20', text: 'text-slate-300', border: 'border-slate-400/30' },
+  3: { bg: 'bg-orange-600/20', text: 'text-orange-400', border: 'border-orange-500/30' },
+} as const;
+
 export function CategoryRow({
   item,
   onToggleVisible,
   isConnected,
+  rank,
 }: CategoryRowProps) {
   const verdictConfig = {
     strong: {
@@ -46,6 +55,18 @@ export function CategoryRow({
           : 'bg-slate-800/30 border border-transparent opacity-60'
       }`}
     >
+      {/* Rank Badge for Top 3 */}
+      {rank && rank <= 3 && (
+        <div
+          className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-bold border ${
+            RANK_COLORS[rank as 1 | 2 | 3].bg
+          } ${RANK_COLORS[rank as 1 | 2 | 3].text} ${RANK_COLORS[rank as 1 | 2 | 3].border}`}
+          title={`#${rank} opportunity`}
+        >
+          {rank}
+        </div>
+      )}
+
       {/* Visibility Toggle */}
       <button
         onClick={() => onToggleVisible(item.id)}

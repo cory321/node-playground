@@ -156,6 +156,7 @@ function App() {
     setConnectingFrom,
     connectingTo,
     setConnectingTo,
+    nodes,
   });
 
   // Add node handlers
@@ -249,13 +250,24 @@ function App() {
   const completeConnectionToInputFromPort = useCallback(
     (nodeId: string) => {
       if (connectingFrom && connectingFrom !== nodeId) {
+        // Check if target is a ProviderDiscovery node (single input only)
+        const targetNode = nodes.find((n) => n.id === nodeId);
+        const isProviderNode = targetNode?.type === 'providers';
+
         setConnections((prev) => {
           const exists = prev.some(
             (c) => c.fromId === connectingFrom && c.toId === nodeId && c.fromPort === connectingFromPort
           );
           if (exists) return prev;
+
+          // For ProviderDiscovery nodes, replace any existing input connection
+          let filtered = prev;
+          if (isProviderNode) {
+            filtered = prev.filter((c) => c.toId !== nodeId);
+          }
+
           return [
-            ...prev,
+            ...filtered,
             { 
               id: `c-${Date.now()}`, 
               fromId: connectingFrom, 
@@ -269,7 +281,7 @@ function App() {
       setConnectingFromPort(null);
       setConnectingTo(null);
     },
-    [connectingFrom, connectingFromPort]
+    [connectingFrom, connectingFromPort, nodes]
   );
 
   // Get port connections helper

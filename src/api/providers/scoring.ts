@@ -173,7 +173,7 @@ export function generateReasoning(
   if (provider.website) {
     reasons.push('Has website');
   } else {
-    reasons.push('No website (needs marketing help)');
+    reasons.push('Website missing from Google Business Profile');
   }
 
   const reviews = provider.reviews || 0;

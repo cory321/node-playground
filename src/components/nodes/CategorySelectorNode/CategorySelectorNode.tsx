@@ -46,6 +46,35 @@ interface CategorySelectorNodeProps {
 }
 
 /**
+ * Calculate opportunity score for sorting categories.
+ * Higher score = better opportunity.
+ */
+function calculateOpportunityScore(cat: CategoryItem): number {
+  // Verdict score: strong=100, maybe=50, skip=0
+  const verdictScore = cat.verdict === 'strong' ? 100 : cat.verdict === 'maybe' ? 50 : 0;
+  
+  // SERP quality score: Weak=30 (less competition = better), Medium=15, Strong=0
+  const serpScore = cat.serpQuality === 'Weak' ? 30 : cat.serpQuality === 'Medium' ? 15 : 0;
+  
+  // SERP numeric score: invert so lower competition scores higher (max ~20 points)
+  // serpScore typically ranges 0-100, so we invert and scale
+  const invertedSerpScore = Math.max(0, 20 - (cat.serpScore / 5));
+  
+  return verdictScore + serpScore + invertedSerpScore;
+}
+
+/**
+ * Sort categories by opportunity, with top 3 at the top.
+ */
+function sortByOpportunity(categories: CategoryItem[]): CategoryItem[] {
+  return [...categories].sort((a, b) => {
+    const scoreA = calculateOpportunityScore(a);
+    const scoreB = calculateOpportunityScore(b);
+    return scoreB - scoreA; // Descending (best first)
+  });
+}
+
+/**
  * CategorySelectorNode - Receives category opportunities from Deep Research Node
  * and exposes each visible category as an independent output port.
  * Enables fan-out to multiple downstream Provider Discovery nodes.
@@ -71,28 +100,30 @@ export function CategorySelectorNode({
   getPortConnections,
 }: CategorySelectorNodeProps) {
   // Sync categories from upstream when data changes
+  // Use stable string keys for comparison to avoid reference equality issues
   const incomingCategoriesKey = incomingData?.categories
     ?.map((c) => c.category)
     .join(',') || '';
-  const incomingCity = incomingData?.city;
-  const incomingState = incomingData?.state;
+  const currentCategoriesKey = node.categories.map((c) => c.category).join(',');
+  const incomingCity = incomingData?.city || null;
+  const incomingState = incomingData?.state || null;
 
   useEffect(() => {
     if (!incomingData?.categories || incomingData.categories.length === 0) {
       return;
     }
 
-    // Check if we need to update
-    const currentCategoriesKey = node.categories.map((c) => c.category).join(',');
+    // Check if we need to update using stable string keys
     const cityChanged = node.inputCity !== incomingCity;
     const stateChanged = node.inputState !== incomingState;
     const categoriesChanged = currentCategoriesKey !== incomingCategoriesKey;
 
     if (cityChanged || stateChanged || categoriesChanged) {
       // Convert CategoryAnalysisResult[] to CategoryItem[]
+      // We need to access node.categories here but don't include it in deps
+      // to avoid infinite loops - use a ref pattern or accept stale visibility
       const newCategories: CategoryItem[] = incomingData.categories.map((cat, index) => {
-        // Preserve visibility state for existing categories
-        const existing = node.categories.find((c) => c.category === cat.category);
+        // Default visibility: show non-skip categories
         return {
           id: `cat-${index}`,
           category: cat.category,
@@ -100,24 +131,27 @@ export function CategorySelectorNode({
           serpScore: cat.serpScore,
           leadValue: cat.leadValue,
           verdict: cat.verdict,
-          visible: existing?.visible ?? (cat.verdict !== 'skip'), // Default: show non-skip
+          visible: cat.verdict !== 'skip',
           order: index,
         };
       });
 
+      // Sort by opportunity quality
+      const sortedCategories = sortByOpportunity(newCategories);
+
       updateNode(node.id, {
-        inputCity: incomingCity || null,
-        inputState: incomingState || null,
-        categories: newCategories,
+        inputCity: incomingCity,
+        inputState: incomingState,
+        categories: sortedCategories,
         lastUpdatedAt: Date.now(),
       });
     }
   }, [
     incomingCategoriesKey,
+    currentCategoriesKey,
     incomingCity,
     incomingState,
     node.id,
-    node.categories,
     node.inputCity,
     node.inputState,
     updateNode,
@@ -200,19 +234,19 @@ export function CategorySelectorNode({
       borderClass="border-slate-700/50"
       hoverBorderClass="group-hover:border-violet-500/30"
       resizeHoverColor="hover:text-violet-400"
+      extraPorts={
+        <MultiPort
+          nodeId={node.id}
+          ports={portConfigs}
+          connectedPorts={connectedPorts}
+          hoveredPort={hoveredPort}
+          setHoveredPort={setHoveredPort}
+          onPortMouseDown={onOutputPortMouseDown}
+          onPortMouseUp={onOutputPortMouseUp}
+          isActive={isOutputActive}
+        />
+      }
     >
-      {/* Multi-Port Output Ports */}
-      <MultiPort
-        nodeId={node.id}
-        ports={portConfigs}
-        connectedPorts={connectedPorts}
-        hoveredPort={hoveredPort}
-        setHoveredPort={setHoveredPort}
-        onPortMouseDown={onOutputPortMouseDown}
-        onPortMouseUp={onOutputPortMouseUp}
-        isActive={isOutputActive}
-      />
-
       {/* No Connection State */}
       {!incomingData?.city ? (
         <div className="flex items-center gap-2 px-3 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg">
@@ -261,13 +295,14 @@ export function CategorySelectorNode({
 
           {/* Category List */}
           {node.categories.length > 0 ? (
-            <div className="flex flex-col gap-1 overflow-y-auto max-h-[280px] pr-1">
-              {node.categories.map((item) => (
+            <div className="flex flex-col gap-1 overflow-y-auto flex-1 min-h-0 pr-1">
+              {node.categories.map((item, index) => (
                 <CategoryRow
                   key={item.id}
                   item={item}
                   onToggleVisible={handleToggleVisible}
                   isConnected={connectedPorts.has(item.id)}
+                  rank={index < 3 ? index + 1 : undefined}
                 />
               ))}
             </div>
