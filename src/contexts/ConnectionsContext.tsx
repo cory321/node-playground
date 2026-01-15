@@ -5,12 +5,15 @@ import { Connection } from '@/types/connections';
 interface ConnectionsContextValue {
   connections: Connection[];
   setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
-  addConnection: (fromId: string, toId: string) => void;
+  addConnection: (fromId: string, toId: string, fromPort?: string, toPort?: string) => void;
   removeConnection: (id: string) => void;
   removeConnectionsForNode: (nodeId: string) => void;
+  removeConnectionsForPort: (nodeId: string, portId: string) => void;
   getConnectionsFrom: (nodeId: string) => Connection[];
+  getConnectionsFromPort: (nodeId: string, portId: string) => Connection[];
   getConnectionsTo: (nodeId: string) => Connection[];
-  hasConnection: (fromId: string, toId: string) => boolean;
+  hasConnection: (fromId: string, toId: string, fromPort?: string, toPort?: string) => boolean;
+  isPortConnected: (nodeId: string, portId: string) => boolean;
 }
 
 // Create context
@@ -34,14 +37,30 @@ export function ConnectionsProvider({
 }: ConnectionsProviderProps) {
   const [connections, setConnections] = useState<Connection[]>(initialConnections);
 
-  // Add a new connection
-  const addConnection = useCallback((fromId: string, toId: string) => {
+  // Add a new connection (with optional port identifiers for multi-port nodes)
+  const addConnection = useCallback((
+    fromId: string, 
+    toId: string, 
+    fromPort?: string, 
+    toPort?: string
+  ) => {
     setConnections((prev) => {
-      // Check if connection already exists
-      const exists = prev.some((c) => c.fromId === fromId && c.toId === toId);
+      // Check if connection already exists (including port matching)
+      const exists = prev.some((c) => 
+        c.fromId === fromId && 
+        c.toId === toId &&
+        c.fromPort === fromPort &&
+        c.toPort === toPort
+      );
       if (exists) return prev;
 
-      return [...prev, { id: `c-${Date.now()}`, fromId, toId }];
+      return [...prev, { 
+        id: `c-${Date.now()}`, 
+        fromId, 
+        toId,
+        ...(fromPort && { fromPort }),
+        ...(toPort && { toPort }),
+      }];
     });
   }, []);
 
@@ -57,9 +76,23 @@ export function ConnectionsProvider({
     );
   }, []);
 
+  // Remove all connections from a specific port
+  const removeConnectionsForPort = useCallback((nodeId: string, portId: string) => {
+    setConnections((prev) =>
+      prev.filter((c) => !(c.fromId === nodeId && c.fromPort === portId))
+    );
+  }, []);
+
   // Get connections from a node
   const getConnectionsFrom = useCallback(
     (nodeId: string) => connections.filter((c) => c.fromId === nodeId),
+    [connections]
+  );
+
+  // Get connections from a specific port of a node
+  const getConnectionsFromPort = useCallback(
+    (nodeId: string, portId: string) => 
+      connections.filter((c) => c.fromId === nodeId && c.fromPort === portId),
     [connections]
   );
 
@@ -69,10 +102,22 @@ export function ConnectionsProvider({
     [connections]
   );
 
-  // Check if a connection exists
+  // Check if a connection exists (with optional port matching)
   const hasConnection = useCallback(
-    (fromId: string, toId: string) =>
-      connections.some((c) => c.fromId === fromId && c.toId === toId),
+    (fromId: string, toId: string, fromPort?: string, toPort?: string) =>
+      connections.some((c) => 
+        c.fromId === fromId && 
+        c.toId === toId &&
+        (fromPort === undefined || c.fromPort === fromPort) &&
+        (toPort === undefined || c.toPort === toPort)
+      ),
+    [connections]
+  );
+
+  // Check if a specific port has any connections
+  const isPortConnected = useCallback(
+    (nodeId: string, portId: string) =>
+      connections.some((c) => c.fromId === nodeId && c.fromPort === portId),
     [connections]
   );
 
@@ -82,9 +127,12 @@ export function ConnectionsProvider({
     addConnection,
     removeConnection,
     removeConnectionsForNode,
+    removeConnectionsForPort,
     getConnectionsFrom,
+    getConnectionsFromPort,
     getConnectionsTo,
     hasConnection,
+    isPortConnected,
   };
 
   return (

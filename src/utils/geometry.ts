@@ -15,6 +15,28 @@ export function getConnectorPos(
   };
 }
 
+// Constants for multi-port layout (matches CategorySelectorNode row layout)
+export const MULTI_PORT_BASE_OFFSET = 140; // Below header + summary section
+export const MULTI_PORT_SPACING = 44;      // Matches category row height
+
+/**
+ * Get the position of a multi-port connector (for nodes with multiple output ports)
+ * Used by CategorySelectorNode where each visible category has its own output port
+ */
+export function getMultiPortConnectorPos(
+  node: NodeData | undefined,
+  type: 'in' | 'out',
+  portIndex: number,
+  baseOffset: number = MULTI_PORT_BASE_OFFSET,
+  portSpacing: number = MULTI_PORT_SPACING
+): Point {
+  if (!node) return { x: 0, y: 0 };
+  return {
+    x: type === 'out' ? node.x + node.width : node.x,
+    y: node.y + baseOffset + (portIndex * portSpacing),
+  };
+}
+
 /**
  * Generate SVG path for a connection curve
  */

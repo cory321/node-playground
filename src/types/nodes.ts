@@ -4,6 +4,8 @@ export const NODE_TYPES = {
 	OUTPUT: 'output',
 	LOCATION: 'location',
 	RESEARCH: 'research',
+	PROVIDERS: 'providers',
+	CATEGORY_SELECTOR: 'category-selector',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -153,8 +155,98 @@ export interface DeepResearchNodeData extends BaseNodeData {
 	lastScanAt: number | null;
 }
 
+// Provider priority tier
+export type ProviderPriority = 'P1' | 'P2' | 'P3' | 'P4' | 'skip';
+
+// Provider scoring (5 factors, 1-5 each, max 25)
+export interface ProviderScore {
+	advertising: number; // LSAs, Google Ads, directories
+	digitalPresence: number; // Website quality
+	reviewVelocity: number; // Recent review activity
+	sizeSignal: number; // Solo → small team → large
+	reachability: number; // Phone/email available
+	total: number;
+	priority: ProviderPriority;
+}
+
+// Provider data from discovery
+export interface ProviderData {
+	id: string;
+	name: string;
+	phone: string | null;
+	website: string | null;
+	address: string | null;
+	googleRating: number | null;
+	googleReviewCount: number | null;
+	hasLSA: boolean;
+	hasGoogleAds: boolean;
+	score: ProviderScore;
+	reasoning: string;
+	contacted: boolean; // Simple tracking
+}
+
+// Provider discovery progress
+export interface ProviderDiscoveryProgress {
+	currentSource: string | null;
+	completed: boolean;
+}
+
+// Provider Discovery Node specific data
+export interface ProviderDiscoveryNodeData extends BaseNodeData {
+	type: 'providers';
+	status: NodeStatus;
+	error: string | null;
+	// Input (from connected node)
+	inputCategory: string | null;
+	inputCity: string | null;
+	inputState: string | null;
+	// Manual category input (when connected to Location node only)
+	manualCategory: string;
+	// Results
+	providers: ProviderData[];
+	// Progress
+	progress: ProviderDiscoveryProgress;
+	// Timestamps
+	lastDiscoveryAt: number | null;
+}
+
+// Category item within the Category Selector Node
+export interface CategoryItem {
+	id: string;           // Unique ID for this slot (used as port ID)
+	category: string;     // Category name from research
+	serpQuality: 'Weak' | 'Medium' | 'Strong';
+	serpScore: number;
+	leadValue: string;
+	verdict: 'strong' | 'maybe' | 'skip';
+	visible: boolean;     // Controls port visibility
+	order: number;        // For reordering
+}
+
+// Category Selector Node output (per-port data sent downstream)
+export interface CategoryPortOutput {
+	category: string;
+	city: string;
+	state: string | null;
+	serpQuality: 'Weak' | 'Medium' | 'Strong';
+	serpScore: number;
+	leadValue: string;
+	verdict: 'strong' | 'maybe' | 'skip';
+}
+
+// Category Selector Node specific data
+export interface CategorySelectorNodeData extends BaseNodeData {
+	type: 'category-selector';
+	// Input data (from connected Research node)
+	inputCity: string | null;
+	inputState: string | null;
+	// Categories populated from upstream
+	categories: CategoryItem[];
+	// Timestamp
+	lastUpdatedAt: number | null;
+}
+
 // Union type for all node types
-export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData;
+export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -171,6 +263,14 @@ export function isLocationNode(node: NodeData): node is LocationNodeData {
 
 export function isResearchNode(node: NodeData): node is DeepResearchNodeData {
 	return node.type === 'research';
+}
+
+export function isProviderNode(node: NodeData): node is ProviderDiscoveryNodeData {
+	return node.type === 'providers';
+}
+
+export function isCategorySelectorNode(node: NodeData): node is CategorySelectorNodeData {
+	return node.type === 'category-selector';
 }
 
 // Default node dimensions
@@ -195,6 +295,16 @@ export const NODE_DEFAULTS = {
 		height: 600,
 		color: '#f97316',
 	},
+	providers: {
+		width: 480,
+		height: 520,
+		color: '#14b8a6',
+	},
+	'category-selector': {
+		width: 420,
+		height: 480,
+		color: '#8b5cf6', // Violet/purple
+	},
 } as const;
 
 // Port types
@@ -203,4 +313,5 @@ export type PortType = 'in' | 'out';
 export interface HoveredPort {
 	nodeId: string;
 	type: PortType;
+	portId?: string; // For multi-port nodes
 }

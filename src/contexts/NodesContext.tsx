@@ -4,6 +4,8 @@ import {
   LLMNodeData,
   OutputNodeData,
   LocationNodeData,
+  DeepResearchNodeData,
+  ProviderDiscoveryNodeData,
   NODE_DEFAULTS,
 } from '@/types/nodes';
 import { CanvasTransform } from '@/types/canvas';
@@ -12,7 +14,7 @@ import { CanvasTransform } from '@/types/canvas';
 interface NodesContextValue {
   nodes: NodeData[];
   setNodes: React.Dispatch<React.SetStateAction<NodeData[]>>;
-  addNode: (type: 'llm' | 'output' | 'location', transform: CanvasTransform) => void;
+  addNode: (type: 'llm' | 'output' | 'location' | 'research' | 'providers', transform: CanvasTransform) => void;
   updateNode: (id: string, updates: Partial<NodeData>) => void;
   deleteNode: (id: string) => void;
   getNode: (id: string) => NodeData | undefined;
@@ -65,7 +67,7 @@ export function NodesProvider({ children, initialNodes = DEFAULT_NODES }: NodesP
   const [nodes, setNodes] = useState<NodeData[]>(initialNodes);
 
   // Add a new node
-  const addNode = useCallback((type: 'llm' | 'output' | 'location', transform: CanvasTransform) => {
+  const addNode = useCallback((type: 'llm' | 'output' | 'location' | 'research' | 'providers', transform: CanvasTransform) => {
     const defaults = NODE_DEFAULTS[type];
     const baseX = (window.innerWidth / 2 - transform.x - defaults.width / 2) / transform.scale;
     const baseY = (window.innerHeight / 2 - transform.y - defaults.height / 2) / transform.scale;
@@ -103,7 +105,7 @@ export function NodesProvider({ children, initialNodes = DEFAULT_NODES }: NodesP
         displayValue: null,
         lastUpdated: null,
       } as OutputNodeData;
-    } else {
+    } else if (type === 'location') {
       newNode = {
         id: Date.now().toString(),
         x: baseX,
@@ -118,6 +120,61 @@ export function NodesProvider({ children, initialNodes = DEFAULT_NODES }: NodesP
         demographicsStatus: 'idle',
         demographicsError: null,
       } as LocationNodeData;
+    } else if (type === 'research') {
+      newNode = {
+        id: Date.now().toString(),
+        x: baseX,
+        y: baseY,
+        width: defaults.width,
+        height: defaults.height,
+        title: 'Deep Research',
+        text: '',
+        color: defaults.color,
+        type: 'research',
+        scanMode: 'full',
+        status: 'idle',
+        error: null,
+        inputCity: null,
+        inputState: null,
+        cityTraits: [],
+        maxSearches: 12,
+        enableDeepDive: true,
+        triageResult: null,
+        categoryResults: [],
+        topOpportunities: [],
+        skipList: [],
+        progress: {
+          currentCategory: null,
+          completedCount: 0,
+          totalCount: 0,
+          cacheHits: 0,
+          searchesUsed: 0,
+        },
+        lastScanAt: null,
+      } as DeepResearchNodeData;
+    } else {
+      newNode = {
+        id: Date.now().toString(),
+        x: baseX,
+        y: baseY,
+        width: defaults.width,
+        height: defaults.height,
+        title: 'Provider Discovery',
+        color: defaults.color,
+        type: 'providers',
+        status: 'idle',
+        error: null,
+        inputCategory: null,
+        inputCity: null,
+        inputState: null,
+        manualCategory: '',
+        providers: [],
+        progress: {
+          currentSource: null,
+          completed: false,
+        },
+        lastDiscoveryAt: null,
+      } as ProviderDiscoveryNodeData;
     }
 
     setNodes((prev) => [...prev, newNode]);

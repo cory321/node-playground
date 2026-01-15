@@ -4,6 +4,8 @@ import {
   Monitor,
   MapPin,
   Search,
+  Layers,
+  Users,
   Settings,
   Save,
   FolderOpen,
@@ -18,6 +20,8 @@ interface ToolbarProps {
   onAddOutputNode: () => void;
   onAddLocationNode: () => void;
   onAddResearchNode: () => void;
+  onAddCategorySelectorNode: () => void;
+  onAddProviderNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -34,6 +38,8 @@ export function Toolbar({
   onAddOutputNode,
   onAddLocationNode,
   onAddResearchNode,
+  onAddCategorySelectorNode,
+  onAddProviderNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -77,6 +83,22 @@ export function Toolbar({
           icon={<Search size={20} />}
           label="Add Research Node"
           className="bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20"
+        />
+
+        {/* Add Category Selector Node */}
+        <ToolbarButton
+          onClick={onAddCategorySelectorNode}
+          icon={<Layers size={20} />}
+          label="Add Category Selector"
+          className="bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-500/20"
+        />
+
+        {/* Add Provider Discovery Node */}
+        <ToolbarButton
+          onClick={onAddProviderNode}
+          icon={<Users size={20} />}
+          label="Add Provider Discovery"
+          className="bg-teal-600 hover:bg-teal-500 shadow-lg shadow-teal-500/20"
         />
 
         <div className="h-6 w-px bg-slate-700 mx-1" />

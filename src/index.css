@@ -80,3 +80,27 @@ body {
   width: 100%;
   height: 100%;
 }
+
+/* Custom scrollbar styling */
+.scrollbar-themed {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+}
+
+.scrollbar-themed::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-themed::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+.scrollbar-themed::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+
+.scrollbar-themed::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Brain, Monitor, MapPin, Search, LucideIcon } from 'lucide-react';
+import { Brain, Monitor, MapPin, Search, Users, Layers, LucideIcon } from 'lucide-react';
 import {
   NodeType,
   NodeData,
@@ -7,6 +7,8 @@ import {
   OutputNodeData,
   LocationNodeData,
   DeepResearchNodeData,
+  ProviderDiscoveryNodeData,
+  CategorySelectorNodeData,
   NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -153,6 +155,66 @@ registry.set('research', {
       searchesUsed: 0,
     },
     lastScanAt: null,
+  }),
+});
+
+// Register Provider Discovery node type
+registry.set('providers', {
+  type: 'providers',
+  label: 'Provider Discovery',
+  icon: Users,
+  color: NODE_DEFAULTS.providers.color,
+  defaultWidth: NODE_DEFAULTS.providers.width,
+  defaultHeight: NODE_DEFAULTS.providers.height,
+  hasInputPort: true,
+  hasOutputPort: true,
+  createDefaultData: (id: string, x: number, y: number): ProviderDiscoveryNodeData => ({
+    id,
+    x,
+    y,
+    width: NODE_DEFAULTS.providers.width,
+    height: NODE_DEFAULTS.providers.height,
+    title: 'Provider Discovery',
+    color: NODE_DEFAULTS.providers.color,
+    type: 'providers',
+    status: 'idle',
+    error: null,
+    inputCategory: null,
+    inputCity: null,
+    inputState: null,
+    manualCategory: '',
+    providers: [],
+    progress: {
+      currentSource: null,
+      completed: false,
+    },
+    lastDiscoveryAt: null,
+  }),
+});
+
+// Register Category Selector node type
+registry.set('category-selector', {
+  type: 'category-selector',
+  label: 'Category Selector',
+  icon: Layers,
+  color: NODE_DEFAULTS['category-selector'].color,
+  defaultWidth: NODE_DEFAULTS['category-selector'].width,
+  defaultHeight: NODE_DEFAULTS['category-selector'].height,
+  hasInputPort: true,
+  hasOutputPort: false, // Custom multi-port handling
+  createDefaultData: (id: string, x: number, y: number): CategorySelectorNodeData => ({
+    id,
+    x,
+    y,
+    width: NODE_DEFAULTS['category-selector'].width,
+    height: NODE_DEFAULTS['category-selector'].height,
+    title: 'Category Selector',
+    color: NODE_DEFAULTS['category-selector'].color,
+    type: 'category-selector',
+    inputCity: null,
+    inputState: null,
+    categories: [],
+    lastUpdatedAt: null,
   }),
 });
 

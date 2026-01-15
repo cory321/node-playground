@@ -45,6 +45,17 @@ export interface ScanResultRow {
   created_at: string;
 }
 
+// Database types for provider caching
+export interface ProviderCacheRow {
+  id: string;
+  query: string;
+  city: string;
+  state: string | null;
+  providers: Record<string, unknown>[];
+  created_at: string;
+  expires_at: string;
+}
+
 // Database types for project persistence
 export interface ProjectRow {
   id: string;

@@ -118,7 +118,7 @@ export function ResultsTable({
       </div>
 
       {/* Table Body */}
-      <div className="max-h-48 overflow-y-auto">
+      <div className="max-h-80 overflow-y-auto scrollbar-themed">
         {sortedResults.map((result) => {
           const verdictStyle = VERDICT_STYLES[result.verdict];
           const tierStyle = TIER_STYLES[result.tier];

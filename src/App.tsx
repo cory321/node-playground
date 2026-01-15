@@ -68,6 +68,7 @@ function App() {
   const [draggingNode, setDraggingNode] = useState<DragState | null>(null);
   const [resizingNode, setResizingNode] = useState<ResizeState | null>(null);
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [connectingFromPort, setConnectingFromPort] = useState<string | null>(null); // For multi-port nodes
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
   const [hoveredPort, setHoveredPort] = useState<HoveredPort | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
@@ -95,7 +96,13 @@ function App() {
   }, []);
 
   // Chain execution hook
-  const { executeLLMNode, getIncomingData, getIncomingLocationData } = useChainExecution({
+  const { 
+    executeLLMNode, 
+    getIncomingData, 
+    getIncomingLocationData, 
+    getIncomingCategorySelectorData,
+    getIncomingProviderData,
+  } = useChainExecution({
     nodes,
     setNodes,
     connections,
@@ -188,6 +195,91 @@ function App() {
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
 
+  const addProviderNode = useCallback(() => {
+    const node = createNode(
+      'providers',
+      (window.innerWidth / 2 - transform.x - 240) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 260) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addCategorySelectorNode = useCallback(() => {
+    const node = createNode(
+      'category-selector',
+      (window.innerWidth / 2 - transform.x - 210) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 240) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  // Multi-port connection handlers for CategorySelectorNode
+  const handleOutputPortMouseDownWithPort = useCallback(
+    (e: React.MouseEvent, nodeId: string, portId: string) => {
+      e.stopPropagation();
+      setConnectingFrom(nodeId);
+      setConnectingFromPort(portId);
+    },
+    []
+  );
+
+  const handleOutputPortMouseUpWithPort = useCallback(
+    (nodeId: string, portId: string) => {
+      // If we were dragging from an input, complete the connection
+      if (connectingTo && connectingTo !== nodeId) {
+        setConnections((prev) => {
+          const exists = prev.some(
+            (c) => c.fromId === nodeId && c.toId === connectingTo && c.fromPort === portId
+          );
+          if (exists) return prev;
+          return [
+            ...prev,
+            { id: `c-${Date.now()}`, fromId: nodeId, toId: connectingTo, fromPort: portId },
+          ];
+        });
+      }
+      setConnectingTo(null);
+      setConnectingFrom(null);
+      setConnectingFromPort(null);
+    },
+    [connectingTo]
+  );
+
+  // Complete connection TO input from multi-port output
+  const completeConnectionToInputFromPort = useCallback(
+    (nodeId: string) => {
+      if (connectingFrom && connectingFrom !== nodeId) {
+        setConnections((prev) => {
+          const exists = prev.some(
+            (c) => c.fromId === connectingFrom && c.toId === nodeId && c.fromPort === connectingFromPort
+          );
+          if (exists) return prev;
+          return [
+            ...prev,
+            { 
+              id: `c-${Date.now()}`, 
+              fromId: connectingFrom, 
+              toId: nodeId,
+              ...(connectingFromPort && { fromPort: connectingFromPort }),
+            },
+          ];
+        });
+      }
+      setConnectingFrom(null);
+      setConnectingFromPort(null);
+      setConnectingTo(null);
+    },
+    [connectingFrom, connectingFromPort]
+  );
+
+  // Get port connections helper
+  const getPortConnections = useCallback(
+    (nodeId: string, portId: string) => {
+      return connections.filter((c) => c.fromId === nodeId && c.fromPort === portId);
+    },
+    [connections]
+  );
+
   // Mouse move handler
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -222,6 +314,7 @@ function App() {
     setDraggingNode(null);
     setResizingNode(null);
     setIsPanning(false);
+    setConnectingFromPort(null);
     cancelConnection();
   }, [cancelConnection]);
 
@@ -287,6 +380,8 @@ function App() {
         onAddOutputNode={addOutputNode}
         onAddLocationNode={addLocationNode}
         onAddResearchNode={addResearchNode}
+        onAddCategorySelectorNode={addCategorySelectorNode}
+        onAddProviderNode={addProviderNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -313,6 +408,7 @@ function App() {
           connections={connections}
           nodes={nodes}
           connectingFrom={connectingFrom}
+          connectingFromPort={connectingFromPort}
           connectingTo={connectingTo}
           mousePos={mousePos}
         />
@@ -331,13 +427,18 @@ function App() {
           hoveredPort={hoveredPort}
           setHoveredPort={setHoveredPort}
           onInputPortMouseDown={startConnectionFromInput}
-          onInputPortMouseUp={completeConnectionToInput}
+          onInputPortMouseUp={connectingFromPort ? completeConnectionToInputFromPort : completeConnectionToInput}
           onOutputPortMouseDown={startConnectionFromOutput}
           onOutputPortMouseUp={completeConnectionToOutput}
+          onOutputPortMouseDownWithPort={handleOutputPortMouseDownWithPort}
+          onOutputPortMouseUpWithPort={handleOutputPortMouseUpWithPort}
           connectingFrom={connectingFrom}
           connectingTo={connectingTo}
           getIncomingData={getIncomingData}
           getIncomingLocationData={getIncomingLocationData}
+          getIncomingCategorySelectorData={getIncomingCategorySelectorData}
+          getIncomingProviderData={getIncomingProviderData}
+          getPortConnections={getPortConnections}
         />
       </div>
 
