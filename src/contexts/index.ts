@@ -9,3 +9,8 @@ export {
 	generateLocationId,
 } from './ComparisonContext';
 export type { SavedLocation } from './ComparisonContext';
+export {
+	ImageLibraryProvider,
+	useImageLibrary,
+	useImageCount,
+} from './ImageLibraryContext';

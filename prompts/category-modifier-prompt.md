@@ -893,20 +893,37 @@ Licensed, bonded, and insured. ROC #XXXXXX."
 
 ## FINAL INSTRUCTION
 
-Take the Foundation Golden Prompt + the category and location inputs. Produce a complete, specialized prompt that will generate a landing page to:
+Take the Foundation Golden Prompt + the category and location inputs. Produce a COMPLETE, BUILD-READY specialized prompt that mirrors the FULL structure of the Foundation Golden Prompt, with ALL sections filled in.
 
-1. **Rank sustainably** for "[Category] [Location]" using white-hat SEO
-2. **Provide genuine value** with helpful content (tips, cost guides, how-to-choose)
-3. **Convert** visitors based on category-specific psychology
-4. **Look authentic** as a local [Category] business in [Location]
-5. **Pass Google's quality bar** — content that stands alone as useful
+Your output MUST include these complete sections (not summaries — full content):
 
-**Non-Negotiable Requirements:**
+### Required Output Sections:
 
-- Minimum 800 words of unique, helpful content
-- Category-specific value content sections (from Required Value Content above)
-- Transparency disclosure in footer
-- No keyword stuffing, fake urgency, or thin template content
-- Location-specific details (not just city name swaps)
+1. **GENERATED BUSINESS IDENTITY** — Complete code block with BUSINESS_NAME, TAGLINE, ESTABLISHED, SERVICE_AREA, PHONE, DOMAIN
+2. **Why This Name** — Rationale for naming choice
+3. **SEO TARGETS** — Full HTML for title tag, meta description, H1, and complete keyword strategy tables
+4. **DESIGN DIRECTION** — Selected style with complete CSS color palette and typography system
+5. **PAGE ARCHITECTURE** — Every section (Hero, Credibility Strip, Services, Value Content, etc.) with ACTUAL COPY written out
+6. **REQUIRED VALUE CONTENT #1** — FULL 400+ word section (e.g., "How to Choose a [Service]")
+7. **REQUIRED VALUE CONTENT #2** — FULL 400+ word section (e.g., checklist or cost guide)
+8. **SERVICE AREA SECTION** — Complete list of neighborhoods/cities with descriptions
+9. **FAQ SECTION** — 5-6 complete Q&A pairs with full answers
+10. **FORM SPECIFICATION** — Complete form fields, CTA button text, microcopy
+11. **SCHEMA.ORG JSON-LD** — Complete LocalBusiness and FAQPage JSON (not templates)
+12. **FRONTEND IMPLEMENTATION** — Complete CSS variables with actual hex values, font specifications
+
+The output should be:
+
+- **Comprehensive** — 2000+ words minimum
+- **Implementation-ready** — A frontend developer can build directly from this
+- **Filled in** — No {{PLACEHOLDERS}} remaining, all content is actual copy
+- **Identical in structure** to the Foundation Golden Prompt, just specialized
+
+This specialized prompt must be complete enough that:
+
+1. A frontend developer can build the page without asking questions
+2. All copy is written and ready to use
+3. All technical specifications are concrete (colors as hex, fonts named)
+4. All schema JSON can be copy-pasted and used directly
 
 The specialized prompt should read like it was written by someone who has built and ranked 100+ lead gen sites for **{{CATEGORY}}** businesses — using sustainable, white-hat tactics that survive algorithm updates.

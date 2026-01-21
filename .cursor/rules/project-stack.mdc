@@ -1,0 +1,30 @@
+---
+description: 'Project-specific technology stack and conventions for node-builder'
+alwaysApply: true
+---
+
+# Node Builder Project Stack
+
+## Technology Stack
+
+- **Frontend**: React 18+ with TypeScript
+- **Styling**: Tailwind CSS
+- **Build**: Vite
+- **State**: React Context (NodesContext, ConnectionsContext, CanvasContext)
+
+## Project Conventions
+
+- Use existing component patterns in `src/components/`
+- Follow node architecture pattern in `src/components/nodes/`
+- Use hooks in `src/hooks/` for shared logic
+- API integrations go in `src/api/`
+- Types defined in `src/types/`
+
+## When to Request Specialist Rules
+
+When working on this project, request these rules as needed:
+
+- For React components: `@frontend-developer` or `@react-specialist`
+- For TypeScript issues: `@typescript-pro`
+- For UI/design work: `@frontend-design` or `@ui-designer`
+- For API work: `@backend-developer` or `@api-designer`

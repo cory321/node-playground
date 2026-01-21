@@ -9,6 +9,7 @@ import {
   isProviderNode, 
   isCategorySelectorNode,
   isWebDesignerNode,
+  isImageGenNode,
   DemographicsData,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
@@ -152,6 +153,10 @@ export function useChainExecution({
           // WebDesignerNode - output the generated prompt
           if (isWebDesignerNode(n) && n.generatedPrompt) {
             return n.generatedPrompt;
+          }
+          // ImageGenNode - output the generated image as data URL
+          if (isImageGenNode(n) && n.generatedImage) {
+            return n.generatedImage;
           }
           return null;
         })

@@ -7,6 +7,7 @@ export const NODE_TYPES = {
 	PROVIDERS: 'providers',
 	CATEGORY_SELECTOR: 'category-selector',
 	WEB_DESIGNER: 'web-designer',
+	IMAGE_GEN: 'image-gen',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -269,8 +270,30 @@ export interface WebDesignerNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Aspect ratio types for image generation
+export type AspectRatioPreset = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+export type AspectRatioMode = 'preset' | 'custom';
+
+// Image Generation Node specific data
+export interface ImageGenNodeData extends BaseNodeData {
+	type: 'image-gen';
+	status: NodeStatus;
+	error: string | null;
+	// Prompt (local input, can be overridden by upstream)
+	prompt: string;
+	// Aspect ratio configuration
+	aspectRatioMode: AspectRatioMode;
+	aspectRatio: AspectRatioPreset; // For preset mode
+	customWidth: number | null; // For custom mode (e.g. 1440)
+	customHeight: number | null; // For custom mode (e.g. 4500)
+	// Generated output
+	generatedImage: string | null; // Base64 data URL
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
-export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData | WebDesignerNodeData;
+export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData | WebDesignerNodeData | ImageGenNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -299,6 +322,10 @@ export function isCategorySelectorNode(node: NodeData): node is CategorySelector
 
 export function isWebDesignerNode(node: NodeData): node is WebDesignerNodeData {
 	return node.type === 'web-designer';
+}
+
+export function isImageGenNode(node: NodeData): node is ImageGenNodeData {
+	return node.type === 'image-gen';
 }
 
 // Default node dimensions
@@ -337,6 +364,11 @@ export const NODE_DEFAULTS = {
 		width: 400,
 		height: 420,
 		color: '#ec4899', // Pink
+	},
+	'image-gen': {
+		width: 380,
+		height: 420,
+		color: '#06b6d4', // Cyan/teal
 	},
 } as const;
 

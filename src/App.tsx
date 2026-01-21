@@ -8,6 +8,7 @@ import { Toolbar } from '@/components/toolbar';
 import { GridBackground, ConnectionLayer, NodeRenderer, EmptyState } from '@/components/canvas';
 import { SettingsModal, SaveModal, LoadModal } from '@/components/modals';
 import { ComparisonPanel } from '@/components/nodes/LocationNode';
+import { ImageLibraryPanel } from '@/components/panels';
 
 // Hooks
 import { useChainExecution } from '@/hooks/useChainExecution';
@@ -17,7 +18,7 @@ import { useNodeResize } from '@/hooks/useNodeResize';
 import { useConnectionHandlers } from '@/hooks/useConnectionHandlers';
 
 // Contexts
-import { useComparison } from '@/contexts';
+import { useComparison, useImageLibrary } from '@/contexts';
 
 // Node registry for creating new nodes
 import { createNode } from '@/components/nodes/registry';
@@ -82,6 +83,9 @@ function App() {
 
   // Comparison context
   const { locations: comparisonLocations, togglePanel: toggleComparisonPanel } = useComparison();
+  
+  // Image library context
+  const { images: libraryImages, togglePanel: toggleImageLibrary } = useImageLibrary();
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -219,6 +223,15 @@ function App() {
     const node = createNode(
       'web-designer',
       (window.innerWidth / 2 - transform.x - 200) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 210) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addImageGenNode = useCallback(() => {
+    const node = createNode(
+      'image-gen',
+      (window.innerWidth / 2 - transform.x - 190) / transform.scale,
       (window.innerHeight / 2 - transform.y - 210) / transform.scale
     );
     if (node) setNodes((prev) => [...prev, node]);
@@ -405,6 +418,7 @@ function App() {
         onAddCategorySelectorNode={addCategorySelectorNode}
         onAddProviderNode={addProviderNode}
         onAddWebDesignerNode={addWebDesignerNode}
+        onAddImageGenNode={addImageGenNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -412,6 +426,8 @@ function App() {
         onImport={importSetup}
         onToggleCompare={toggleComparisonPanel}
         comparisonCount={comparisonLocations.length}
+        onToggleImageLibrary={toggleImageLibrary}
+        imageLibraryCount={libraryImages.length}
         nodeCount={nodes.length}
         connectionCount={connections.length}
       />
@@ -500,6 +516,9 @@ function App() {
 
       {/* Comparison Panel */}
       <ComparisonPanel />
+
+      {/* Image Library Panel */}
+      <ImageLibraryPanel />
     </div>
   );
 }

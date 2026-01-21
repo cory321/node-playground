@@ -10,6 +10,7 @@ import {
   isProviderNode,
   isCategorySelectorNode,
   isWebDesignerNode,
+  isImageGenNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { LLMNode } from '../nodes/LLMNode';
@@ -19,6 +20,7 @@ import { DeepResearchNode } from '../nodes/DeepResearchNode';
 import { ProviderDiscoveryNode } from '../nodes/ProviderDiscoveryNode';
 import { CategorySelectorNode } from '../nodes/CategorySelectorNode';
 import { WebDesignerNode } from '../nodes/WebDesignerNode';
+import { ImageGenNode } from '../nodes/ImageGenNode';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -281,6 +283,32 @@ export function NodeRenderer({
               connectingFrom={connectingFrom}
               connectingTo={connectingTo}
               incomingData={getIncomingWebDesignerData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isImageGenNode(node)) {
+          return (
+            <ImageGenNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingData(node.id)}
             />
           );
         }

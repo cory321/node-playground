@@ -11,3 +11,12 @@ export {
   deleteProject,
 } from './projects';
 export type { ProjectData } from './projects';
+
+// Re-export image storage functions
+export {
+  uploadGeneratedImage,
+  listGeneratedImages,
+  deleteGeneratedImage,
+  hasImageStorage,
+} from './storage';
+export type { GeneratedImage } from './storage';

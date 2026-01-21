@@ -6,3 +6,4 @@ export { DeepResearchNode } from './DeepResearchNode';
 export { ProviderDiscoveryNode } from './ProviderDiscoveryNode';
 export { CategorySelectorNode } from './CategorySelectorNode';
 export { WebDesignerNode } from './WebDesignerNode';
+export { ImageGenNode } from './ImageGenNode';

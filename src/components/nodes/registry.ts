@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Brain, Monitor, MapPin, Search, Users, Layers, Palette, LucideIcon } from 'lucide-react';
+import { Brain, Monitor, MapPin, Search, Users, Layers, Palette, Image as ImageIcon, LucideIcon } from 'lucide-react';
 import {
   NodeType,
   NodeData,
@@ -10,6 +10,7 @@ import {
   ProviderDiscoveryNodeData,
   CategorySelectorNodeData,
   WebDesignerNodeData,
+  ImageGenNodeData,
   NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -251,6 +252,37 @@ registry.set('web-designer', {
     inputCompetition: null,
     generatedPrompt: null,
     generatedBusinessName: null,
+    lastGeneratedAt: null,
+  }),
+});
+
+// Register Image Generation node type
+registry.set('image-gen', {
+  type: 'image-gen',
+  label: 'Image Generator',
+  icon: ImageIcon,
+  color: NODE_DEFAULTS['image-gen'].color,
+  defaultWidth: NODE_DEFAULTS['image-gen'].width,
+  defaultHeight: NODE_DEFAULTS['image-gen'].height,
+  hasInputPort: true,
+  hasOutputPort: true,
+  createDefaultData: (id: string, x: number, y: number): ImageGenNodeData => ({
+    id,
+    x,
+    y,
+    width: NODE_DEFAULTS['image-gen'].width,
+    height: NODE_DEFAULTS['image-gen'].height,
+    title: 'Image Generator',
+    color: NODE_DEFAULTS['image-gen'].color,
+    type: 'image-gen',
+    status: 'idle',
+    error: null,
+    prompt: '',
+    aspectRatioMode: 'preset',
+    aspectRatio: '1:1',
+    customWidth: null,
+    customHeight: null,
+    generatedImage: null,
     lastGeneratedAt: null,
   }),
 });

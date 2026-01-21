@@ -7,12 +7,14 @@ import {
   Layers,
   Users,
   Palette,
+  Image as ImageIcon,
   Settings,
   Save,
   FolderOpen,
   Download,
   Upload,
   BarChart3,
+  GalleryHorizontalEnd,
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
 
@@ -24,6 +26,7 @@ interface ToolbarProps {
   onAddCategorySelectorNode: () => void;
   onAddProviderNode: () => void;
   onAddWebDesignerNode: () => void;
+  onAddImageGenNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -31,6 +34,8 @@ interface ToolbarProps {
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onToggleCompare?: () => void;
   comparisonCount?: number;
+  onToggleImageLibrary?: () => void;
+  imageLibraryCount?: number;
   nodeCount: number;
   connectionCount: number;
 }
@@ -43,6 +48,7 @@ export function Toolbar({
   onAddCategorySelectorNode,
   onAddProviderNode,
   onAddWebDesignerNode,
+  onAddImageGenNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -50,6 +56,8 @@ export function Toolbar({
   onImport,
   onToggleCompare,
   comparisonCount = 0,
+  onToggleImageLibrary,
+  imageLibraryCount = 0,
   nodeCount,
   connectionCount,
 }: ToolbarProps) {
@@ -112,6 +120,14 @@ export function Toolbar({
           className="bg-pink-600 hover:bg-pink-500 shadow-lg shadow-pink-500/20"
         />
 
+        {/* Add Image Generator Node */}
+        <ToolbarButton
+          onClick={onAddImageGenNode}
+          icon={<ImageIcon size={20} />}
+          label="Add Image Generator"
+          className="bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-500/20"
+        />
+
         <div className="h-6 w-px bg-slate-700 mx-1" />
 
         {/* Compare Locations */}
@@ -126,6 +142,23 @@ export function Toolbar({
             {comparisonCount > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-amber-500 text-slate-900 text-[10px] font-bold rounded-full flex items-center justify-center">
                 {comparisonCount}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Image Library */}
+        {onToggleImageLibrary && (
+          <div className="relative">
+            <ToolbarButton
+              onClick={onToggleImageLibrary}
+              icon={<GalleryHorizontalEnd size={20} />}
+              label="Image Library"
+              className="hover:text-cyan-400"
+            />
+            {imageLibraryCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-cyan-500 text-slate-900 text-[10px] font-bold rounded-full flex items-center justify-center">
+                {imageLibraryCount}
               </span>
             )}
           </div>

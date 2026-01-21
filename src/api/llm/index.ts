@@ -4,6 +4,7 @@ export { getApiKeys, saveApiKeys, clearApiKeys, hasApiKey, hasEnvKeys } from './
 export { callClaude } from './anthropic';
 export { callOpenAI } from './openai';
 export { callGemini } from './google';
+export { callGeminiImage, calculateAspectRatio, findClosestAspectRatio, ASPECT_RATIO_PRESETS } from './gemini-image';
 
 import { MODELS } from './models';
 import { callClaude } from './anthropic';

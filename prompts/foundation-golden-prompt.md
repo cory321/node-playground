@@ -839,6 +839,252 @@ Requirements:
 
 ---
 
+## FRONTEND IMPLEMENTATION SPECIFICATIONS
+
+> **Purpose:** Provide complete, actionable specifications for a frontend developer to build this landing page. This section ensures the output is ready for a frontend agent to build without questions.
+
+---
+
+### FRONTEND DESIGN EXCELLENCE MANDATE
+
+Create distinctive, production-grade interfaces that avoid generic "AI slop" aesthetics.
+
+#### Design Thinking (Before Coding)
+
+**Understand Context:**
+
+- **Purpose**: Lead generation for local service — must build trust instantly
+- **Tone**: Pick ONE EXTREME direction from the design directions above and commit fully:
+  - Brutalist Confidence (emergency services)
+  - Editorial Luxury (premium/specialty services)
+  - Warm Craft (care/removal services)
+  - Industrial Utility (trade services)
+  - Retro-Modern (established businesses)
+
+**CRITICAL**: Choose a clear direction and execute with precision. Bold maximalism and refined minimalism both work — intentionality matters, not intensity.
+
+#### Typography Rules
+
+- **NEVER use**: Arial, Inter, Roboto, Space Grotesk, system fonts
+- **DO**: Choose distinctive, characterful fonts from the Typography System section
+- Pair a distinctive display font with a refined body font
+- Unexpected choices elevate everything
+
+#### Color & Theme Rules
+
+- Commit to a cohesive aesthetic
+- Use CSS custom properties for consistency
+- Dominant colors with sharp accents > timid, evenly-distributed palettes
+- **NEVER**: Purple gradients on white (cliché AI aesthetic)
+
+#### Motion Guidelines
+
+- CSS-only animations (no JavaScript frameworks)
+- Focus on HIGH-IMPACT moments:
+  - One well-orchestrated page load with staggered reveals (animation-delay)
+  - Scroll-triggered effects using Intersection Observer
+  - Hover states that surprise but don't distract
+- Quality > quantity
+
+#### Spatial Composition
+
+- Unexpected layouts that break from the 3-column card grid
+- Asymmetry where appropriate
+- Generous negative space (luxury) OR controlled density (urgency)
+- Grid-breaking hero elements
+
+#### Backgrounds & Visual Details
+
+Create atmosphere and depth:
+
+- Subtle gradient meshes
+- Noise textures (2-5% opacity)
+- Geometric patterns for section breaks
+- Layered transparencies
+- Dramatic shadows for depth
+- Decorative borders
+- Grain overlays for organic feel
+
+#### Anti-Patterns (NEVER BUILD)
+
+- Overused fonts (Inter, Roboto, Arial, Space Grotesk)
+- Purple gradients on white
+- Predictable 3-column card layouts
+- Cookie-cutter hero sections
+- Generic icon libraries (use custom or none)
+- Testimonial carousels
+- "Trusted by" grayscale logo bars
+- Floating geometric blob shapes
+
+---
+
+### Technology Stack
+
+- **HTML5** — Semantic markup with proper ARIA attributes
+- **CSS3** — Custom properties, Grid, Flexbox, clamp() for fluid sizing
+- **JavaScript** — Vanilla ES6+, progressive enhancement, no frameworks required
+- **Fonts** — Google Fonts with preload strategy
+
+### Responsive Breakpoints
+
+| Breakpoint | Target            | Layout Changes                  |
+| ---------- | ----------------- | ------------------------------- |
+| Base       | Mobile (< 640px)  | Single column, stacked sections |
+| sm         | Tablet (640px+)   | 2-column where appropriate      |
+| lg         | Desktop (1024px+) | Full layout with sidebars       |
+| xl         | Large (1280px+)   | Max-width container, centered   |
+
+### CSS Architecture
+
+Use CSS Custom Properties for theming:
+
+```css
+:root {
+	/* Colors */
+	--color-primary: #[hex];
+	--color-secondary: #[hex];
+	--color-accent: #[hex];
+	--color-surface: #[hex];
+	--color-text: #[hex];
+	--color-text-muted: #[hex];
+
+	/* Typography */
+	--font-display: '[Display Font]', Georgia, serif;
+	--font-body: '[Body Font]', -apple-system, sans-serif;
+	--font-size-hero: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+	--font-size-h2: clamp(1.75rem, 3vw + 0.5rem, 2.5rem);
+	--font-size-h3: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
+	--font-size-body: clamp(1rem, 1vw + 0.5rem, 1.125rem);
+
+	/* Spacing (8px base) */
+	--space-1: 0.5rem;
+	--space-2: 1rem;
+	--space-3: 1.5rem;
+	--space-4: 2rem;
+	--space-6: 3rem;
+	--space-8: 4rem;
+	--space-12: 6rem;
+
+	/* Shadows */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+	--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+	/* Transitions */
+	--transition-fast: 150ms ease;
+	--transition-base: 300ms ease;
+}
+```
+
+### Component Structure
+
+Each section should follow this pattern:
+
+```html
+<section
+	id="[section-id]"
+	class="section section--[modifier]"
+	aria-labelledby="[section-id]-heading"
+>
+	<div class="container">
+		<h2 id="[section-id]-heading" class="section__heading">[Heading]</h2>
+		<!-- Section content -->
+	</div>
+</section>
+```
+
+### Form Implementation
+
+```html
+<form id="lead-form" class="form" action="/api/leads" method="POST" novalidate>
+	<div class="form__group">
+		<label for="name" class="form__label">Your Name</label>
+		<input
+			type="text"
+			id="name"
+			name="name"
+			class="form__input"
+			autocomplete="name"
+			required
+			aria-describedby="name-error"
+		/>
+		<span
+			id="name-error"
+			class="form__error"
+			role="alert"
+			aria-live="polite"
+		></span>
+	</div>
+	<!-- Additional fields -->
+	<button type="submit" class="btn btn--primary btn--lg">
+		<span class="btn__text">[CTA Text]</span>
+		<span class="btn__loading" aria-hidden="true">Sending...</span>
+	</button>
+</form>
+```
+
+### JavaScript Requirements
+
+```javascript
+// Progressive enhancement - form works without JS
+document.addEventListener('DOMContentLoaded', () => {
+	// Smooth scroll for anchor links
+	// Form validation with inline feedback
+	// Intersection Observer for scroll animations
+	// Phone number click tracking
+});
+
+// Form validation pattern
+const validateField = (field) => {
+	const error = field.nextElementSibling;
+	if (!field.validity.valid) {
+		error.textContent = field.validationMessage;
+		field.setAttribute('aria-invalid', 'true');
+		return false;
+	}
+	error.textContent = '';
+	field.removeAttribute('aria-invalid');
+	return true;
+};
+```
+
+### Accessibility Requirements
+
+- **Focus Management** — Visible focus indicators (3px outline minimum)
+- **Color Contrast** — Minimum 4.5:1 for body text, 3:1 for large text
+- **Screen Readers** — Proper heading hierarchy, landmark regions, ARIA labels
+- **Keyboard Navigation** — All interactive elements reachable
+- **Reduced Motion** — Respect prefers-reduced-motion
+
+```css
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+```
+
+### Image Strategy
+
+- **Hero Image** — Placeholder with aspect-ratio, lazy load off (LCP critical)
+- **Below Fold** — All images use loading="lazy" decoding="async"
+- **Alt Text** — Descriptive with location context for SEO
+- **Formats** — WebP with JPEG fallback via <picture>
+
+### Schema Implementation
+
+All schema should be in a single `<script type="application/ld+json">` block combining:
+
+- LocalBusiness
+- Service (one per service offered)
+- FAQPage
+- BreadcrumbList
+
+---
+
 ## FINAL INSTRUCTION
 
 Generate a complete landing page that will:
@@ -848,6 +1094,7 @@ Generate a complete landing page that will:
 3. **Convert visitors** into qualified leads through trust, not manipulation
 4. **Look premium** — indistinguishable from a well-funded local service company
 5. **Pass Google's quality bar** — content that stands alone as useful even without conversion
+6. **Be implementation-ready** — A frontend developer can build directly from this spec
 
 **Non-Negotiable Requirements:**
 
@@ -856,6 +1103,9 @@ Generate a complete landing page that will:
 - Transparency disclosure in footer
 - No keyword stuffing, fake urgency, or thin template content
 - Location-specific details (not just city name mentions)
+- Complete CSS custom properties with actual hex values
+- Full schema.org JSON-LD with actual data (not placeholders)
+- Form HTML with proper accessibility attributes
 
 **The Ultimate Test:**
 If Google's quality raters reviewed this page, would they see:
