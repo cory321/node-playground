@@ -3,14 +3,17 @@ import {
   NodeData, 
   HoveredPort, 
   CategoryAnalysisResult,
+  ProviderData,
   isLLMNode, 
   isOutputNode, 
   isLocationNode, 
   isResearchNode, 
   isProviderNode,
+  isProviderEnrichmentNode,
   isCategorySelectorNode,
   isWebDesignerNode,
   isImageGenNode,
+  isLocalKnowledgeNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { LLMNode } from '../nodes/LLMNode';
@@ -18,9 +21,11 @@ import { OutputNode } from '../nodes/OutputNode';
 import { LocationNode } from '../nodes/LocationNode';
 import { DeepResearchNode } from '../nodes/DeepResearchNode';
 import { ProviderDiscoveryNode } from '../nodes/ProviderDiscoveryNode';
+import { ProviderEnrichmentNode } from '../nodes/ProviderEnrichmentNode';
 import { CategorySelectorNode } from '../nodes/CategorySelectorNode';
 import { WebDesignerNode } from '../nodes/WebDesignerNode';
 import { ImageGenNode } from '../nodes/ImageGenNode';
+import { LocalKnowledgeNode } from '../nodes/LocalKnowledgeNode';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -75,6 +80,18 @@ interface NodeRendererProps {
     urgency?: 'extreme' | 'high' | 'medium' | 'low';
     competition?: 'low' | 'moderate' | 'high' | 'extreme';
   } | null;
+  getIncomingProviderEnrichmentData?: (nodeId: string) => {
+    providers: ProviderData[];
+    category?: string;
+    city?: string;
+    state?: string | null;
+  } | null;
+  getIncomingLocalKnowledgeData?: (nodeId: string) => {
+    city: string;
+    county?: string;
+    state: string | null;
+    category?: string;
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
 }
 
@@ -103,6 +120,8 @@ export function NodeRenderer({
   getIncomingCategorySelectorData,
   getIncomingProviderData,
   getIncomingWebDesignerData,
+  getIncomingProviderEnrichmentData,
+  getIncomingLocalKnowledgeData,
   getPortConnections,
 }: NodeRendererProps) {
   const isConnectedInput = (nodeId: string) =>
@@ -235,6 +254,32 @@ export function NodeRenderer({
           );
         }
 
+        if (isProviderEnrichmentNode(node)) {
+          return (
+            <ProviderEnrichmentNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingProviderEnrichmentData?.(node.id) ?? null}
+            />
+          );
+        }
+
         if (isCategorySelectorNode(node)) {
           return (
             <CategorySelectorNode
@@ -309,6 +354,32 @@ export function NodeRenderer({
               connectingFrom={connectingFrom}
               connectingTo={connectingTo}
               incomingData={getIncomingData(node.id)}
+            />
+          );
+        }
+
+        if (isLocalKnowledgeNode(node)) {
+          return (
+            <LocalKnowledgeNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingLocalKnowledgeData?.(node.id) ?? null}
             />
           );
         }

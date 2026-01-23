@@ -5,9 +5,11 @@ export const NODE_TYPES = {
 	LOCATION: 'location',
 	RESEARCH: 'research',
 	PROVIDERS: 'providers',
+	PROVIDER_ENRICHMENT: 'provider-enrichment',
 	CATEGORY_SELECTOR: 'category-selector',
 	WEB_DESIGNER: 'web-designer',
 	IMAGE_GEN: 'image-gen',
+	LOCAL_KNOWLEDGE: 'local-knowledge',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -204,8 +206,12 @@ export interface ProviderDiscoveryNodeData extends BaseNodeData {
 	inputState: string | null;
 	// Manual category input (when connected to Location node only)
 	manualCategory: string;
+	// Configuration
+	providerLimit: number; // How many providers to request (default 10, max ~20)
 	// Results
 	providers: ProviderData[];
+	// Selection for export (IDs of providers selected to pass downstream)
+	selectedProviderIds: string[];
 	// Progress
 	progress: ProviderDiscoveryProgress;
 	// Timestamps
@@ -214,14 +220,14 @@ export interface ProviderDiscoveryNodeData extends BaseNodeData {
 
 // Category item within the Category Selector Node
 export interface CategoryItem {
-	id: string;           // Unique ID for this slot (used as port ID)
-	category: string;     // Category name from research
+	id: string; // Unique ID for this slot (used as port ID)
+	category: string; // Category name from research
 	serpQuality: 'Weak' | 'Medium' | 'Strong';
 	serpScore: number;
 	leadValue: string;
 	verdict: 'strong' | 'maybe' | 'skip';
-	visible: boolean;     // Controls port visibility
-	order: number;        // For reordering
+	visible: boolean; // Controls port visibility
+	order: number; // For reordering
 }
 
 // Category Selector Node output (per-port data sent downstream)
@@ -270,6 +276,40 @@ export interface WebDesignerNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Provider Enrichment progress tracking
+export interface ProviderEnrichmentProgress {
+	currentProvider: string | null;
+	currentIndex: number;
+	totalCount: number;
+	completed: boolean;
+	// Discovery phase tracking
+	phase: 'discovery' | 'enrichment' | null;
+	discoveredCount: number; // How many websites were discovered
+}
+
+// Provider Enrichment Node specific data
+export interface ProviderEnrichmentNodeData extends BaseNodeData {
+	type: 'provider-enrichment';
+	status: NodeStatus;
+	error: string | null;
+	// Input from upstream Provider Discovery Node
+	inputProviders: ProviderData[];
+	inputCategory: string | null;
+	inputCity: string | null;
+	inputState: string | null;
+	// Results (EnrichedProvider[] - imported from enrichedProvider.ts when used)
+	enrichedProviders: unknown[]; // Use unknown to avoid circular import
+	// Progress
+	progress: ProviderEnrichmentProgress;
+	// Settings
+	skipWithoutWebsite: boolean; // Legacy - kept for compatibility
+	discoverMissingWebsites: boolean; // New: try to find websites for providers without one
+	// Manual website overrides (providerId -> websiteUrl)
+	manualWebsites: Record<string, string>;
+	// Timestamps
+	lastEnrichmentAt: number | null;
+}
+
 // Aspect ratio types for image generation
 export type AspectRatioPreset = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type AspectRatioMode = 'preset' | 'custom';
@@ -292,8 +332,36 @@ export interface ImageGenNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Local Knowledge Node specific data
+export interface LocalKnowledgeNodeData extends BaseNodeData {
+	type: 'local-knowledge';
+	status: NodeStatus;
+	error: string | null;
+	// Inputs (from connected nodes)
+	inputCity: string | null;
+	inputCounty: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	// Manual category input (when category not from upstream)
+	manualCategory: string;
+	// Generated output (LocalKnowledgeOutput from localKnowledge.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
-export type NodeData = LLMNodeData | OutputNodeData | LocationNodeData | DeepResearchNodeData | ProviderDiscoveryNodeData | CategorySelectorNodeData | WebDesignerNodeData | ImageGenNodeData;
+export type NodeData =
+	| LLMNodeData
+	| OutputNodeData
+	| LocationNodeData
+	| DeepResearchNodeData
+	| ProviderDiscoveryNodeData
+	| ProviderEnrichmentNodeData
+	| CategorySelectorNodeData
+	| WebDesignerNodeData
+	| ImageGenNodeData
+	| LocalKnowledgeNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -312,11 +380,15 @@ export function isResearchNode(node: NodeData): node is DeepResearchNodeData {
 	return node.type === 'research';
 }
 
-export function isProviderNode(node: NodeData): node is ProviderDiscoveryNodeData {
+export function isProviderNode(
+	node: NodeData,
+): node is ProviderDiscoveryNodeData {
 	return node.type === 'providers';
 }
 
-export function isCategorySelectorNode(node: NodeData): node is CategorySelectorNodeData {
+export function isCategorySelectorNode(
+	node: NodeData,
+): node is CategorySelectorNodeData {
 	return node.type === 'category-selector';
 }
 
@@ -326,6 +398,18 @@ export function isWebDesignerNode(node: NodeData): node is WebDesignerNodeData {
 
 export function isImageGenNode(node: NodeData): node is ImageGenNodeData {
 	return node.type === 'image-gen';
+}
+
+export function isProviderEnrichmentNode(
+	node: NodeData,
+): node is ProviderEnrichmentNodeData {
+	return node.type === 'provider-enrichment';
+}
+
+export function isLocalKnowledgeNode(
+	node: NodeData,
+): node is LocalKnowledgeNodeData {
+	return node.type === 'local-knowledge';
 }
 
 // Default node dimensions
@@ -369,6 +453,16 @@ export const NODE_DEFAULTS = {
 		width: 380,
 		height: 420,
 		color: '#06b6d4', // Cyan/teal
+	},
+	'provider-enrichment': {
+		width: 500,
+		height: 560,
+		color: '#a855f7', // Purple
+	},
+	'local-knowledge': {
+		width: 420,
+		height: 520,
+		color: '#22c55e', // Green - representing local/organic knowledge
 	},
 } as const;
 

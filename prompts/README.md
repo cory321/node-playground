@@ -81,6 +81,7 @@ A two-stage prompt system for generating SEO-dominant, high-converting lead gene
 |------|---------|
 | `foundation-golden-prompt.md` | Core prompt with business naming strategy, anti-slop design rules, SEO requirements, and page architecture |
 | `category-modifier-prompt.md` | Meta-prompt that specializes the foundation for a specific category + location with industry psychology and keyword patterns |
+| `site-planner-golden-prompt.md` | Strategic blueprint generator for multi-page lead generation sites with E-E-A-T compliance, market viability scoring, and 2026 algorithm awareness |
 | `README.md` | This usage guide |
 
 ---
@@ -314,3 +315,105 @@ A successful page should:
 3. **Pass** the "would you call?" test
 4. **Look** indistinguishable from a real local business
 5. **Feel** premium, not template-generated
+
+---
+
+## Site Planner Golden Prompt
+
+The Site Planner is the strategic brain that creates comprehensive website blueprints for multi-page lead generation sites. It incorporates critical 2026 algorithm research.
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Market Viability Scoring** | Scores markets 1-100 with proceed/reconsider/abort recommendations |
+| **E-E-A-T Strategy** | Specific experience, expertise, authority, trust signals per page |
+| **Algorithm Compliance** | Checks against August 2025 spam update vulnerabilities |
+| **Channel Strategy** | LSAs as primary channel with organic as authority builder |
+| **Multi-Model Revenue** | Lead gen + WaaS + productized SEO hybrid approach |
+| **Cannibalization Prevention** | Exclusive vs. shared keyword assignment |
+| **Orphan Page Prevention** | Minimum 2 inbound links per page requirement |
+
+### 2026 Algorithm Context (Built-In)
+
+The prompt incorporates these critical research findings:
+
+- **45% reduction** in unhelpful content (March 2024 core update)
+- **August 2025 spam update** hit lead-gen sites particularly hard
+- **0.01% of local queries** trigger AI Overviews (down from 0.14%)
+- **Expired domain abuse** now explicit spam policy violation
+- **Site reputation abuse** penalties (even CNN, USA Today penalized)
+- **LSAs now primary channel** for home services leads
+- **6-12 month ranking timelines** for moderate competition
+
+### Ranking Timeline Expectations
+
+| Competition | Expected Timeline |
+|-------------|-------------------|
+| Low | 3-6 months |
+| Moderate | 6-12 months |
+| High | 12-18 months |
+
+### Lead Value Benchmarks
+
+| Category | Lead Value Range |
+|----------|------------------|
+| Water Damage Restoration | $150-300+ |
+| Roofing | $100-350 |
+| HVAC | $50-250 |
+| Plumbing | $35-129 |
+| Garage Door | $75-150 |
+| Locksmith | $50-125 |
+
+### Usage
+
+The Site Planner Node has **four input ports** that receive data from upstream nodes:
+
+| Input Port | Source Node | Data |
+|------------|-------------|------|
+| `location` | **Location Node** | City, state, demographics, climate |
+| `serp` | **Deep Research Node** | SERP analysis, aggregator presence, competition |
+| `providers` | **Provider Enrichment Node** | Verified providers with credentials, reviews |
+| `localKnowledge` | **Local Knowledge Node** | Regional terminology, landmarks, community context |
+
+```
+┌─────────────────┐
+│  Location Node  │──────┐
+└─────────────────┘      │
+                         │
+┌─────────────────┐      │     ┌──────────────────┐
+│ Deep Research   │──────┼────▶│ Site Planner     │──▶ SiteBlueprint
+└─────────────────┘      │     │ Node             │
+                         │     └──────────────────┘
+┌─────────────────┐      │
+│ Provider        │──────┤
+│ Enrichment Node │      │
+└─────────────────┘      │
+                         │
+┌─────────────────┐      │
+│ Local Knowledge │──────┘
+│ Node            │
+└─────────────────┘
+```
+
+And outputs a complete `SiteBlueprint` containing:
+
+- Market viability assessment
+- Brand identity with aggregator differentiators
+- Complete page inventory with E-E-A-T requirements
+- Keyword mapping with cannibalization prevention
+- Internal linking strategy
+- Phased launch plan with realistic milestones
+- Channel strategy (LSA + organic mix)
+- Monetization plan (hybrid approach)
+- Compliance requirements
+
+### The "Minefield" Warning
+
+Industry experts describe rank-and-rent in 2026 as "walking through a minefield blindfolded." The Site Planner addresses this by:
+
+1. **Scoring viability honestly** — Markets below 40 get "abort" recommendation
+2. **Building trust first** — Methodology page is non-negotiable
+3. **Integrating LSAs** — Organic alone is too slow for most markets
+4. **Strict compliance** — Every spam policy checked
+5. **Multi-model revenue** — Pure lead-gen is dead; hybrid wins

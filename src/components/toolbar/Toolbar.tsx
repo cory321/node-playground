@@ -6,8 +6,10 @@ import {
   Search,
   Layers,
   Users,
+  Sparkles,
   Palette,
   Image as ImageIcon,
+  BookOpen,
   Settings,
   Save,
   FolderOpen,
@@ -25,8 +27,10 @@ interface ToolbarProps {
   onAddResearchNode: () => void;
   onAddCategorySelectorNode: () => void;
   onAddProviderNode: () => void;
+  onAddProviderEnrichmentNode: () => void;
   onAddWebDesignerNode: () => void;
   onAddImageGenNode: () => void;
+  onAddLocalKnowledgeNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -47,8 +51,10 @@ export function Toolbar({
   onAddResearchNode,
   onAddCategorySelectorNode,
   onAddProviderNode,
+  onAddProviderEnrichmentNode,
   onAddWebDesignerNode,
   onAddImageGenNode,
+  onAddLocalKnowledgeNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -112,6 +118,14 @@ export function Toolbar({
           className="bg-teal-600 hover:bg-teal-500 shadow-lg shadow-teal-500/20"
         />
 
+        {/* Add Provider Enrichment Node */}
+        <ToolbarButton
+          onClick={onAddProviderEnrichmentNode}
+          icon={<Sparkles size={20} />}
+          label="Add Provider Enrichment"
+          className="bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+        />
+
         {/* Add Web Designer Node */}
         <ToolbarButton
           onClick={onAddWebDesignerNode}
@@ -126,6 +140,14 @@ export function Toolbar({
           icon={<ImageIcon size={20} />}
           label="Add Image Generator"
           className="bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-500/20"
+        />
+
+        {/* Add Local Knowledge Node */}
+        <ToolbarButton
+          onClick={onAddLocalKnowledgeNode}
+          icon={<BookOpen size={20} />}
+          label="Add Local Knowledge"
+          className="bg-green-600 hover:bg-green-500 shadow-lg shadow-green-500/20"
         />
 
         <div className="h-6 w-px bg-slate-700 mx-1" />

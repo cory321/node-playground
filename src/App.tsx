@@ -106,7 +106,9 @@ function App() {
     getIncomingLocationData, 
     getIncomingCategorySelectorData,
     getIncomingProviderData,
+    getIncomingProviderEnrichmentData,
     getIncomingWebDesignerData,
+    getIncomingLocalKnowledgeData,
   } = useChainExecution({
     nodes,
     setNodes,
@@ -210,6 +212,15 @@ function App() {
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
 
+  const addProviderEnrichmentNode = useCallback(() => {
+    const node = createNode(
+      'provider-enrichment',
+      (window.innerWidth / 2 - transform.x - 250) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 280) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
   const addCategorySelectorNode = useCallback(() => {
     const node = createNode(
       'category-selector',
@@ -233,6 +244,15 @@ function App() {
       'image-gen',
       (window.innerWidth / 2 - transform.x - 190) / transform.scale,
       (window.innerHeight / 2 - transform.y - 210) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addLocalKnowledgeNode = useCallback(() => {
+    const node = createNode(
+      'local-knowledge',
+      (window.innerWidth / 2 - transform.x - 210) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 260) / transform.scale
     );
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
@@ -417,8 +437,10 @@ function App() {
         onAddResearchNode={addResearchNode}
         onAddCategorySelectorNode={addCategorySelectorNode}
         onAddProviderNode={addProviderNode}
+        onAddProviderEnrichmentNode={addProviderEnrichmentNode}
         onAddWebDesignerNode={addWebDesignerNode}
         onAddImageGenNode={addImageGenNode}
+        onAddLocalKnowledgeNode={addLocalKnowledgeNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -477,7 +499,9 @@ function App() {
           getIncomingLocationData={getIncomingLocationData}
           getIncomingCategorySelectorData={getIncomingCategorySelectorData}
           getIncomingProviderData={getIncomingProviderData}
+          getIncomingProviderEnrichmentData={getIncomingProviderEnrichmentData}
           getIncomingWebDesignerData={getIncomingWebDesignerData}
+          getIncomingLocalKnowledgeData={getIncomingLocalKnowledgeData}
           getPortConnections={getPortConnections}
         />
       </div>
