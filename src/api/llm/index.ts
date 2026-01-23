@@ -1,7 +1,7 @@
 // Re-export all LLM API utilities
 export { MODELS, getModel, getModelsByProvider } from './models';
 export { getApiKeys, saveApiKeys, clearApiKeys, hasApiKey, hasEnvKeys } from './storage';
-export { callClaude } from './anthropic';
+export { callClaude, callClaudeWithVision } from './anthropic';
 export { callOpenAI } from './openai';
 export { callGemini } from './google';
 export { callGeminiImage, calculateAspectRatio, findClosestAspectRatio, ASPECT_RATIO_PRESETS } from './gemini-image';

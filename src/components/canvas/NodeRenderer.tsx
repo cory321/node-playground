@@ -18,10 +18,18 @@ import {
   isSitePlannerNode,
   isProviderProfileGeneratorNode,
   isEditorialContentGeneratorNode,
+  isComparisonDataNode,
+  isSEOOptimizationNode,
+  isDesignPromptNode,
+  isImageSourceNode,
+  isBrandDesignNode,
+  isDataViewerNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { EnrichedProvider } from '@/types/enrichedProvider';
 import { LocalKnowledgeOutput } from '@/types/localKnowledge';
+import { GeneratedEditorialContent } from '@/types/editorialContent';
+import { GeneratedComparisonData } from '@/types/comparisonPage';
 import { LLMNode } from '../nodes/LLMNode';
 import { OutputNode } from '../nodes/OutputNode';
 import { LocationNode } from '../nodes/LocationNode';
@@ -35,6 +43,12 @@ import { LocalKnowledgeNode } from '../nodes/LocalKnowledgeNode';
 import { SitePlannerNode } from '../nodes/SitePlannerNode';
 import { ProviderProfileGeneratorNode } from '../nodes/ProviderProfileGeneratorNode';
 import { EditorialContentGeneratorNode } from '../nodes/EditorialContentGeneratorNode';
+import { ComparisonDataNode } from '../nodes/ComparisonDataNode';
+import { SEOOptimizationNode } from '../nodes/SEOOptimizationNode';
+import { DesignPromptNode } from '../nodes/DesignPromptNode';
+import { ImageSourceNode } from '../nodes/ImageSourceNode';
+import { BrandDesignNode } from '../nodes/BrandDesignNode';
+import { DataViewerNode } from '../nodes/DataViewerNode';
 import { SitePlannerOutput } from '@/types/sitePlanner';
 
 interface NodeRendererProps {
@@ -125,6 +139,23 @@ interface NodeRendererProps {
     localKnowledge: LocalKnowledgeOutput | null;
     serpData: CategoryAnalysisResult | null;
   } | null;
+  getIncomingComparisonDataData?: (nodeId: string) => {
+    blueprint: SitePlannerOutput | null;
+    enrichedProviders: EnrichedProvider[];
+    localKnowledge: LocalKnowledgeOutput | null;
+  } | null;
+  getIncomingSEOOptimizationData?: (nodeId: string) => {
+    blueprint: SitePlannerOutput | null;
+    editorialContent: GeneratedEditorialContent | null;
+    comparisonData: GeneratedComparisonData | null;
+  } | null;
+  getIncomingDesignPromptData?: (nodeId: string) => SitePlannerOutput | null;
+  getIncomingBrandDesignData?: (nodeId: string) => { screenshotUrl: string } | null;
+  getIncomingStructuredData?: (nodeId: string) => {
+    data: unknown;
+    sourceNodeType: string;
+    sourceNodeTitle: string;
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
   getInputPortConnections: (nodeId: string, portId: string) => Connection[];
 }
@@ -161,6 +192,11 @@ export function NodeRenderer({
   getIncomingSitePlannerData,
   getIncomingProfileGeneratorData,
   getIncomingEditorialContentData,
+  getIncomingComparisonDataData,
+  getIncomingSEOOptimizationData,
+  getIncomingDesignPromptData,
+  getIncomingBrandDesignData,
+  getIncomingStructuredData,
   getPortConnections,
   getInputPortConnections,
 }: NodeRendererProps) {
@@ -498,6 +534,151 @@ export function NodeRenderer({
               connectingTo={connectingTo}
               getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
               incomingData={getIncomingEditorialContentData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isComparisonDataNode(node)) {
+          return (
+            <ComparisonDataNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingComparisonDataData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isSEOOptimizationNode(node)) {
+          return (
+            <SEOOptimizationNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingSEOOptimizationData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isDesignPromptNode(node)) {
+          return (
+            <DesignPromptNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingDesignPromptData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isImageSourceNode(node)) {
+          return (
+            <ImageSourceNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+            />
+          );
+        }
+
+        if (isBrandDesignNode(node)) {
+          return (
+            <BrandDesignNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingBrandDesignData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isDataViewerNode(node)) {
+          return (
+            <DataViewerNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              incomingData={getIncomingStructuredData?.(node.id) ?? null}
             />
           );
         }

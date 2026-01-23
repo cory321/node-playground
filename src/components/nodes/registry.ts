@@ -7,11 +7,17 @@ import {
 	Layers,
 	Palette,
 	Image as ImageIcon,
+	ImagePlus,
 	Sparkles,
 	BookOpen,
 	FileText,
 	UserCircle,
 	Newspaper,
+	BarChart3,
+	Shield,
+	Wand2,
+	Paintbrush,
+	Code2,
 	LucideIcon,
 } from 'lucide-react';
 import {
@@ -30,6 +36,12 @@ import {
 	SitePlannerNodeData,
 	ProviderProfileGeneratorNodeData,
 	EditorialContentGeneratorNodeData,
+	ComparisonDataNodeData,
+	SEOOptimizationNodeData,
+	DesignPromptNodeData,
+	ImageSourceNodeData,
+	BrandDesignNodeData,
+	DataViewerNodeData,
 	NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -365,6 +377,7 @@ registry.set('image-gen', {
 		customWidth: null,
 		customHeight: null,
 		generatedImage: null,
+		publicUrl: null,
 		lastGeneratedAt: null,
 	}),
 });
@@ -535,6 +548,237 @@ registry.set('editorial-content-generator', {
 		},
 		output: null,
 		lastGeneratedAt: null,
+	}),
+});
+
+// Register Comparison Data node type
+// Note: hasInputPort is false because we use custom multi-input ports
+registry.set('comparison-data', {
+	type: 'comparison-data',
+	label: 'Comparison Data',
+	icon: BarChart3,
+	color: NODE_DEFAULTS['comparison-data'].color,
+	defaultWidth: NODE_DEFAULTS['comparison-data'].width,
+	defaultHeight: NODE_DEFAULTS['comparison-data'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): ComparisonDataNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['comparison-data'].width,
+		height: NODE_DEFAULTS['comparison-data'].height,
+		title: 'Comparison Data',
+		color: NODE_DEFAULTS['comparison-data'].color,
+		type: 'comparison-data',
+		status: 'idle',
+		error: null,
+		includePricing: true,
+		includeWinnerBadges: true,
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputProviderCount: 0,
+		inputHasBlueprint: false,
+		inputHasLocalKnowledge: false,
+		progress: {
+			phase: 'preparing',
+			currentStep: null,
+			completedSteps: 0,
+			totalSteps: 0,
+		},
+		output: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register SEO Optimization node type
+// Note: hasInputPort is false because we use custom multi-input ports
+registry.set('seo-optimization', {
+	type: 'seo-optimization',
+	label: 'SEO Optimization',
+	icon: Shield,
+	color: NODE_DEFAULTS['seo-optimization'].color,
+	defaultWidth: NODE_DEFAULTS['seo-optimization'].width,
+	defaultHeight: NODE_DEFAULTS['seo-optimization'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): SEOOptimizationNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['seo-optimization'].width,
+		height: NODE_DEFAULTS['seo-optimization'].height,
+		title: 'SEO Optimization',
+		color: NODE_DEFAULTS['seo-optimization'].color,
+		type: 'seo-optimization',
+		status: 'idle',
+		error: null,
+		schemaValidation: true,
+		linkDensityTarget: 10,
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputPageCount: 0,
+		inputHasBlueprint: false,
+		inputHasProviders: false,
+		inputHasEditorial: false,
+		inputHasComparison: false,
+		progress: {
+			phase: 'preparing',
+			currentPage: null,
+			completedPages: 0,
+			totalPages: 0,
+			currentStep: null,
+		},
+		output: null,
+		lastOptimizedAt: null,
+	}),
+});
+
+// Register Design Prompt Generator node type
+// Takes Site Planner output and generates Gemini image prompts
+registry.set('design-prompt', {
+	type: 'design-prompt',
+	label: 'Design Prompt',
+	icon: Wand2,
+	color: NODE_DEFAULTS['design-prompt'].color,
+	defaultWidth: NODE_DEFAULTS['design-prompt'].width,
+	defaultHeight: NODE_DEFAULTS['design-prompt'].height,
+	hasInputPort: true,
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): DesignPromptNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['design-prompt'].width,
+		height: NODE_DEFAULTS['design-prompt'].height,
+		title: 'Design Prompt',
+		color: NODE_DEFAULTS['design-prompt'].color,
+		type: 'design-prompt',
+		status: 'idle',
+		error: null,
+		primaryColorOverride: null,
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputBrandName: null,
+		inputTagline: null,
+		inputProviderCount: 0,
+		inputRegion: null,
+		inputHasBlueprint: false,
+		generatedPrompt: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register Image Source node type
+// Allows selecting an image from the library to use as input source
+registry.set('image-source', {
+	type: 'image-source',
+	label: 'Image Source',
+	icon: ImagePlus,
+	color: NODE_DEFAULTS['image-source'].color,
+	defaultWidth: NODE_DEFAULTS['image-source'].width,
+	defaultHeight: NODE_DEFAULTS['image-source'].height,
+	hasInputPort: false,
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): ImageSourceNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['image-source'].width,
+		height: NODE_DEFAULTS['image-source'].height,
+		title: 'Image Source',
+		color: NODE_DEFAULTS['image-source'].color,
+		type: 'image-source',
+		selectedImageId: null,
+		selectedImageUrl: null,
+		selectedImagePrompt: null,
+		selectedImageAspectRatio: null,
+	}),
+});
+
+// Register Brand Design node type
+// Extracts design system from screenshots using Claude vision
+registry.set('brand-design', {
+	type: 'brand-design',
+	label: 'Brand Design',
+	icon: Paintbrush,
+	color: NODE_DEFAULTS['brand-design'].color,
+	defaultWidth: NODE_DEFAULTS['brand-design'].width,
+	defaultHeight: NODE_DEFAULTS['brand-design'].height,
+	hasInputPort: true,
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): BrandDesignNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['brand-design'].width,
+		height: NODE_DEFAULTS['brand-design'].height,
+		title: 'Brand Design',
+		color: NODE_DEFAULTS['brand-design'].color,
+		type: 'brand-design',
+		status: 'idle',
+		error: null,
+		inputScreenshotUrl: null,
+		progress: {
+			phase: 'preparing',
+			passesComplete: 0,
+			totalPasses: 3,
+		},
+		output: null,
+		lastExtractedAt: null,
+	}),
+});
+
+// Register Data Viewer node type
+// Displays structured JSON output from any upstream node
+registry.set('data-viewer', {
+	type: 'data-viewer',
+	label: 'Data Viewer',
+	icon: Code2,
+	color: NODE_DEFAULTS['data-viewer'].color,
+	defaultWidth: NODE_DEFAULTS['data-viewer'].width,
+	defaultHeight: NODE_DEFAULTS['data-viewer'].height,
+	hasInputPort: true,
+	hasOutputPort: false,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): DataViewerNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['data-viewer'].width,
+		height: NODE_DEFAULTS['data-viewer'].height,
+		title: 'Data Viewer',
+		color: NODE_DEFAULTS['data-viewer'].color,
+		type: 'data-viewer',
+		displayValue: null,
+		sourceNodeType: null,
+		lastUpdated: null,
 	}),
 });
 

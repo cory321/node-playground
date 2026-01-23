@@ -13,13 +13,19 @@ import {
 	isCategorySelectorNode,
 	isWebDesignerNode,
 	isImageGenNode,
+	isImageSourceNode,
 	isLocalKnowledgeNode,
 	isSitePlannerNode,
+	isEditorialContentGeneratorNode,
+	isComparisonDataNode,
+	isDesignPromptNode,
 	DemographicsData,
 } from '@/types/nodes';
 import { EnrichedProvider } from '@/types/enrichedProvider';
 import { LocalKnowledgeOutput } from '@/types/localKnowledge';
 import { SitePlannerOutput } from '@/types/sitePlanner';
+import { GeneratedEditorialContent } from '@/types/editorialContent';
+import { GeneratedComparisonData } from '@/types/comparisonPage';
 import { Connection } from '@/types/connections';
 import { callLLM } from '@/api/llm';
 import { getLeadEconomics } from '@/api/serp/tiers';
@@ -114,6 +120,28 @@ interface EditorialContentInputData {
 	serpData: CategoryAnalysisResult | null;
 }
 
+// Comparison Data node input data (aggregated from multiple upstream nodes)
+interface ComparisonDataInputData {
+	blueprint: SitePlannerOutput | null;
+	enrichedProviders: EnrichedProvider[];
+	localKnowledge: LocalKnowledgeOutput | null;
+}
+
+// SEO Optimization node input data (aggregated from multiple upstream nodes)
+// Note: enrichedProviders are accessed via blueprint.providers (pass-through from site planner)
+interface SEOOptimizationInputData {
+	blueprint: SitePlannerOutput | null;
+	editorialContent: GeneratedEditorialContent | null;
+	comparisonData: GeneratedComparisonData | null;
+}
+
+// Data Viewer node input data (structured data from any node with output)
+interface StructuredDataInput {
+	data: unknown;
+	sourceNodeType: string;
+	sourceNodeTitle: string;
+}
+
 interface UseChainExecutionReturn {
 	executeLLMNode: (nodeId: string) => Promise<string | undefined>;
 	executeChain: (startNodeId: string) => Promise<void>;
@@ -137,6 +165,21 @@ interface UseChainExecutionReturn {
 	getIncomingEditorialContentData: (
 		nodeId: string,
 	) => EditorialContentInputData | null;
+	getIncomingComparisonDataData: (
+		nodeId: string,
+	) => ComparisonDataInputData | null;
+	getIncomingSEOOptimizationData: (
+		nodeId: string,
+	) => SEOOptimizationInputData | null;
+	getIncomingDesignPromptData: (
+		nodeId: string,
+	) => SitePlannerOutput | null;
+	getIncomingBrandDesignData: (
+		nodeId: string,
+	) => { screenshotUrl: string } | null;
+	getIncomingStructuredData: (
+		nodeId: string,
+	) => StructuredDataInput | null;
 	getDownstreamNodes: (nodeId: string) => string[];
 	getUpstreamNodes: (nodeId: string) => string[];
 }
@@ -227,6 +270,14 @@ export function useChainExecution({
 					// ImageGenNode - output the generated image as data URL
 					if (isImageGenNode(n) && n.generatedImage) {
 						return n.generatedImage;
+					}
+					// DesignPromptNode - output the generated design prompt
+					if (isDesignPromptNode(n) && n.generatedPrompt) {
+						return n.generatedPrompt;
+					}
+					// ImageSourceNode - output the selected image URL
+					if (isImageSourceNode(n) && n.selectedImageUrl) {
+						return n.selectedImageUrl;
 					}
 					return null;
 				})
@@ -695,6 +746,205 @@ export function useChainExecution({
 		[nodes, connections]
 	);
 
+	// Get incoming data for Comparison Data node (from Site Planner only - providers and localKnowledge are passed through)
+	const getIncomingComparisonDataData = useCallback(
+		(nodeId: string): ComparisonDataInputData | null => {
+			// Get all connections TO this node
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			let blueprint: SitePlannerOutput | null = null;
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				// Determine which input port this connection is for
+				const targetPort = conn.toPort;
+
+				// Blueprint port - comes from Site Planner node
+				if (targetPort === 'blueprint') {
+					if (isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+						blueprint = upstreamNode.output as SitePlannerOutput;
+					}
+				}
+			}
+
+			// Return null if we don't have the blueprint
+			if (!blueprint) {
+				return null;
+			}
+
+			// Extract enrichedProviders and localKnowledge from the blueprint's pass-through fields
+			return {
+				blueprint,
+				enrichedProviders: blueprint.providers || [],
+				localKnowledge: blueprint.localKnowledge || null,
+			};
+		},
+		[nodes, connections]
+	);
+
+	// Get incoming data for SEO Optimization node
+	// Uses 3 input ports:
+	// - blueprint (required): SitePlannerNode output (includes enriched providers via blueprint.providers)
+	// - editorial (optional): EditorialContentGeneratorNode output
+	// - comparison (optional): ComparisonDataNode output
+	const getIncomingSEOOptimizationData = useCallback(
+		(nodeId: string): SEOOptimizationInputData | null => {
+			// Get all connections TO this node
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			const result: SEOOptimizationInputData = {
+				blueprint: null,
+				editorialContent: null,
+				comparisonData: null,
+			};
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				// Determine which input port this connection is for
+				const targetPort = conn.toPort;
+
+				// Blueprint port - comes from Site Planner node (includes enriched providers)
+				if (targetPort === 'blueprint') {
+					if (isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+						result.blueprint = upstreamNode.output as SitePlannerOutput;
+					}
+				}
+
+				// Editorial port - comes from Editorial Content Generator node
+				if (targetPort === 'editorial') {
+					if (isEditorialContentGeneratorNode(upstreamNode) && upstreamNode.output) {
+						result.editorialContent = upstreamNode.output as GeneratedEditorialContent;
+					}
+				}
+
+				// Comparison port - comes from Comparison Data node
+				if (targetPort === 'comparison') {
+					if (isComparisonDataNode(upstreamNode) && upstreamNode.output) {
+						result.comparisonData = upstreamNode.output as GeneratedComparisonData;
+					}
+				}
+			}
+
+			// Return null if we don't have the required blueprint (which includes providers)
+			if (!result.blueprint || !result.blueprint.providers?.length) {
+				return null;
+			}
+
+			return result;
+		},
+		[nodes, connections]
+	);
+
+	// Get incoming data for Design Prompt Generator node
+	// Takes SitePlannerOutput from upstream Site Planner node
+	const getIncomingDesignPromptData = useCallback(
+		(nodeId: string): SitePlannerOutput | null => {
+			// Find the connection TO this node
+			const incomingConnection = connections.find((c) => c.toId === nodeId);
+			if (!incomingConnection) return null;
+
+			const upstreamNode = nodes.find(
+				(n) => n.id === incomingConnection.fromId,
+			);
+			if (!upstreamNode) return null;
+
+			// Check if upstream is a Site Planner node with output
+			if (isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+				return upstreamNode.output as SitePlannerOutput;
+			}
+
+			return null;
+		},
+		[nodes, connections]
+	);
+
+	// Get incoming data for Brand Design node
+	// Takes screenshot URL from upstream ImageGenNode or ImageSourceNode
+	const getIncomingBrandDesignData = useCallback(
+		(nodeId: string): { screenshotUrl: string } | null => {
+			// Find the connection TO this node
+			const incomingConnection = connections.find((c) => c.toId === nodeId);
+			if (!incomingConnection) return null;
+
+			const upstreamNode = nodes.find(
+				(n) => n.id === incomingConnection.fromId,
+			);
+			if (!upstreamNode) return null;
+
+			// Check if upstream is an Image Gen node with generated image
+			if (isImageGenNode(upstreamNode)) {
+				// Prefer public URL, fallback to base64
+				const screenshotUrl = upstreamNode.publicUrl || upstreamNode.generatedImage;
+				if (screenshotUrl) {
+					return { screenshotUrl };
+				}
+			}
+
+			// Check if upstream is an Image Source node with selected image
+			if (upstreamNode.type === 'image-source' && 'selectedImageUrl' in upstreamNode) {
+				const screenshotUrl = upstreamNode.selectedImageUrl as string | null;
+				if (screenshotUrl) {
+					return { screenshotUrl };
+				}
+			}
+
+			return null;
+		},
+		[nodes, connections]
+	);
+
+	// Get incoming structured data for Data Viewer node
+	// This extracts the `output` field from any upstream node that has one
+	const getIncomingStructuredData = useCallback(
+		(nodeId: string): StructuredDataInput | null => {
+			// Find the connection TO this node
+			const incomingConnection = connections.find((c) => c.toId === nodeId);
+			if (!incomingConnection) return null;
+
+			const upstreamNode = nodes.find(
+				(n) => n.id === incomingConnection.fromId,
+			);
+			if (!upstreamNode) return null;
+
+			// Check if the upstream node has an output field with data
+			// We check for various node types that have structured output
+			const nodeWithOutput = upstreamNode as NodeData & { output?: unknown };
+			
+			if (nodeWithOutput.output !== undefined && nodeWithOutput.output !== null) {
+				return {
+					data: nodeWithOutput.output,
+					sourceNodeType: upstreamNode.type,
+					sourceNodeTitle: upstreamNode.title,
+				};
+			}
+
+			// Also check for LLM response
+			if (isLLMNode(upstreamNode) && upstreamNode.response) {
+				return {
+					data: upstreamNode.response,
+					sourceNodeType: upstreamNode.type,
+					sourceNodeTitle: upstreamNode.title,
+				};
+			}
+
+			// Check for enrichedProviders from ProviderEnrichmentNode
+			if (isProviderEnrichmentNode(upstreamNode) && upstreamNode.enrichedProviders && upstreamNode.enrichedProviders.length > 0) {
+				return {
+					data: upstreamNode.enrichedProviders,
+					sourceNodeType: upstreamNode.type,
+					sourceNodeTitle: upstreamNode.title,
+				};
+			}
+
+			return null;
+		},
+		[nodes, connections]
+	);
+
 	// Propagate data to downstream output nodes
 	const propagateToOutputNodes = useCallback(
 		(sourceNodeId: string, responseData: string) => {
@@ -791,6 +1041,11 @@ export function useChainExecution({
 		getIncomingSitePlannerData,
 		getIncomingProfileGeneratorData,
 		getIncomingEditorialContentData,
+		getIncomingComparisonDataData,
+		getIncomingSEOOptimizationData,
+		getIncomingDesignPromptData,
+		getIncomingBrandDesignData,
+		getIncomingStructuredData,
 		getDownstreamNodes,
 		getUpstreamNodes,
 	};

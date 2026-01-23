@@ -13,6 +13,12 @@ export const NODE_TYPES = {
 	SITE_PLANNER: 'site-planner',
 	PROVIDER_PROFILE_GENERATOR: 'provider-profile-generator',
 	EDITORIAL_CONTENT_GENERATOR: 'editorial-content-generator',
+	COMPARISON_DATA: 'comparison-data',
+	SEO_OPTIMIZATION: 'seo-optimization',
+	DESIGN_PROMPT: 'design-prompt',
+	IMAGE_SOURCE: 'image-source',
+	BRAND_DESIGN: 'brand-design',
+	DATA_VIEWER: 'data-viewer',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -331,6 +337,7 @@ export interface ImageGenNodeData extends BaseNodeData {
 	customHeight: number | null; // For custom mode (e.g. 4500)
 	// Generated output
 	generatedImage: string | null; // Base64 data URL
+	publicUrl: string | null; // Supabase storage URL (for linking)
 	// Timestamps
 	lastGeneratedAt: number | null;
 }
@@ -470,6 +477,167 @@ export interface EditorialContentGeneratorNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Comparison Data Generation progress tracking
+export interface ComparisonDataGenerationProgress {
+	phase:
+		| 'preparing'
+		| 'analyzing'
+		| 'generating-comparisons'
+		| 'generating-pricing'
+		| 'generating-analysis'
+		| 'complete';
+	currentStep: string | null;
+	completedSteps: number;
+	totalSteps: number;
+}
+
+// Comparison Data Node specific data
+// Note: hasInputPort is false because we use custom multi-input ports
+export interface ComparisonDataNodeData extends BaseNodeData {
+	type: 'comparison-data';
+	status: NodeStatus;
+	error: string | null;
+	// Configuration
+	includePricing: boolean;
+	includeWinnerBadges: boolean;
+	// Inputs (aggregated from multiple upstream nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputProviderCount: number;
+	inputHasBlueprint: boolean;
+	inputHasLocalKnowledge: boolean;
+	// Progress tracking
+	progress: ComparisonDataGenerationProgress;
+	// Generated output (GeneratedComparisonData from comparisonPage.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
+// SEO Optimization progress tracking
+export interface SEOOptimizationProgress {
+	phase:
+		| 'preparing'
+		| 'optimizing-meta'
+		| 'generating-schema'
+		| 'optimizing-links'
+		| 'generating-sitemap'
+		| 'validating'
+		| 'complete';
+	currentPage: string | null;
+	completedPages: number;
+	totalPages: number;
+	currentStep: string | null;
+}
+
+// SEO Optimization Node specific data
+// Note: hasInputPort is false because we use custom multi-input ports
+export interface SEOOptimizationNodeData extends BaseNodeData {
+	type: 'seo-optimization';
+	status: NodeStatus;
+	error: string | null;
+	// Configuration
+	schemaValidation: boolean;
+	linkDensityTarget: number;
+	// Inputs (aggregated from multiple upstream nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputPageCount: number;
+	inputHasBlueprint: boolean;
+	inputHasProviders: boolean;
+	inputHasEditorial: boolean;
+	inputHasComparison: boolean;
+	// Progress tracking
+	progress: SEOOptimizationProgress;
+	// Generated output (SEOOptimizedPackage from seoPackage.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastOptimizedAt: number | null;
+}
+
+// Design Prompt Generator Node specific data
+// Transforms Site Planner output into an image generation prompt
+export interface DesignPromptNodeData extends BaseNodeData {
+	type: 'design-prompt';
+	status: NodeStatus;
+	error: string | null;
+	// Optional color override
+	primaryColorOverride: string | null;
+	// Inputs from Site Planner
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputBrandName: string | null;
+	inputTagline: string | null;
+	inputProviderCount: number;
+	inputRegion: string | null;
+	inputHasBlueprint: boolean;
+	// Generated output
+	generatedPrompt: string | null;
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
+// Image Source Node specific data
+// Allows selecting an image from the library to use as source for downstream nodes
+export interface ImageSourceNodeData extends BaseNodeData {
+	type: 'image-source';
+	// Selected image from library
+	selectedImageId: string | null;
+	selectedImageUrl: string | null; // Base64 data URL or public URL
+	// Metadata for display
+	selectedImagePrompt: string | null;
+	selectedImageAspectRatio: string | null;
+}
+
+// Brand Design extraction progress phases
+export type BrandDesignPhase =
+	| 'preparing'
+	| 'extracting-global'
+	| 'extracting-sections'
+	| 'extracting-components'
+	| 'merging'
+	| 'generating-tailwind'
+	| 'complete';
+
+// Brand Design progress tracking
+export interface BrandDesignProgress {
+	phase: BrandDesignPhase;
+	passesComplete: number;
+	totalPasses: 3;
+	currentPassName?: string;
+}
+
+// Brand Design Node specific data
+// Extracts design system from screenshots using Claude vision
+export interface BrandDesignNodeData extends BaseNodeData {
+	type: 'brand-design';
+	status: NodeStatus;
+	error: string | null;
+	// Input from upstream ImageGenNode
+	inputScreenshotUrl: string | null;
+	// Progress tracking for multi-pass extraction
+	progress: BrandDesignProgress;
+	// Generated output (BrandDesignOutput from brandDesign.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastExtractedAt: number | null;
+}
+
+// Data Viewer Node specific data
+// Displays structured JSON output from upstream nodes
+export interface DataViewerNodeData extends BaseNodeData {
+	type: 'data-viewer';
+	// Cached display value (stringified JSON)
+	displayValue: string | null;
+	// Source node type for context
+	sourceNodeType: string | null;
+	// Last updated timestamp
+	lastUpdated: number | null;
+}
+
 // Union type for all node types
 export type NodeData =
 	| LLMNodeData
@@ -484,7 +652,13 @@ export type NodeData =
 	| LocalKnowledgeNodeData
 	| SitePlannerNodeData
 	| ProviderProfileGeneratorNodeData
-	| EditorialContentGeneratorNodeData;
+	| EditorialContentGeneratorNodeData
+	| ComparisonDataNodeData
+	| SEOOptimizationNodeData
+	| DesignPromptNodeData
+	| ImageSourceNodeData
+	| BrandDesignNodeData
+	| DataViewerNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -553,6 +727,42 @@ export function isEditorialContentGeneratorNode(
 	return node.type === 'editorial-content-generator';
 }
 
+export function isComparisonDataNode(
+	node: NodeData,
+): node is ComparisonDataNodeData {
+	return node.type === 'comparison-data';
+}
+
+export function isSEOOptimizationNode(
+	node: NodeData,
+): node is SEOOptimizationNodeData {
+	return node.type === 'seo-optimization';
+}
+
+export function isDesignPromptNode(
+	node: NodeData,
+): node is DesignPromptNodeData {
+	return node.type === 'design-prompt';
+}
+
+export function isImageSourceNode(
+	node: NodeData,
+): node is ImageSourceNodeData {
+	return node.type === 'image-source';
+}
+
+export function isBrandDesignNode(
+	node: NodeData,
+): node is BrandDesignNodeData {
+	return node.type === 'brand-design';
+}
+
+export function isDataViewerNode(
+	node: NodeData,
+): node is DataViewerNodeData {
+	return node.type === 'data-viewer';
+}
+
 // Default node dimensions
 export const NODE_DEFAULTS = {
 	llm: {
@@ -619,6 +829,36 @@ export const NODE_DEFAULTS = {
 		width: 420,
 		height: 520,
 		color: '#10b981', // Emerald - representing editorial/content creation
+	},
+	'comparison-data': {
+		width: 480,
+		height: 580,
+		color: '#ef4444', // Red - representing data/comparison analysis
+	},
+	'seo-optimization': {
+		width: 500,
+		height: 640,
+		color: '#0d9488', // Teal - representing technical SEO
+	},
+	'design-prompt': {
+		width: 420,
+		height: 480,
+		color: '#d946ef', // Fuchsia - representing design/creative
+	},
+	'image-source': {
+		width: 340,
+		height: 380,
+		color: '#f472b6', // Pink - representing image source/selection
+	},
+	'brand-design': {
+		width: 400,
+		height: 550,
+		color: '#6366f1', // Indigo - representing design/branding
+	},
+	'data-viewer': {
+		width: 420,
+		height: 480,
+		color: '#64748b', // Slate - neutral for viewing data
 	},
 } as const;
 

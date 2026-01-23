@@ -6,3 +6,5 @@ export * from './api';
 export * from './enrichedProvider';
 export * from './localKnowledge';
 export * from './sitePlanner';
+export * from './comparisonPage';
+export * from './brandDesign';

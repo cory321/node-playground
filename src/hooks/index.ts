@@ -11,3 +11,5 @@ export { usePromptGeneration } from './usePromptGeneration';
 export { useLocalKnowledge } from './useLocalKnowledge';
 export { useSitePlanner } from './useSitePlanner';
 export { useProviderProfileGenerator } from './useProviderProfileGenerator';
+export { useSEOOptimization } from './useSEOOptimization';
+export { useBrandDesignExtractor } from './useBrandDesignExtractor';
