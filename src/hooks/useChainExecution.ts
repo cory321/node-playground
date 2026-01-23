@@ -4,15 +4,20 @@ import {
 	LLMNodeData,
 	CategoryAnalysisResult,
 	ProviderData,
+	LocationData,
 	isLLMNode,
 	isLocationNode,
 	isResearchNode,
 	isProviderNode,
+	isProviderEnrichmentNode,
 	isCategorySelectorNode,
 	isWebDesignerNode,
 	isImageGenNode,
+	isLocalKnowledgeNode,
 	DemographicsData,
 } from '@/types/nodes';
+import { EnrichedProvider } from '@/types/enrichedProvider';
+import { LocalKnowledgeOutput } from '@/types/localKnowledge';
 import { Connection } from '@/types/connections';
 import { callLLM } from '@/api/llm';
 import { getLeadEconomics } from '@/api/serp/tiers';
@@ -81,6 +86,18 @@ interface LocalKnowledgeInputData {
 	category?: string;
 }
 
+// Site Planner node input data (aggregated from multiple upstream nodes)
+interface SitePlannerInputData {
+	location: LocationData | null;
+	serp: {
+		category: string;
+		serpQuality: 'Weak' | 'Medium' | 'Strong';
+		serpScore: number;
+	} | null;
+	providers: EnrichedProvider[];
+	localKnowledge: LocalKnowledgeOutput | null;
+}
+
 interface UseChainExecutionReturn {
 	executeLLMNode: (nodeId: string) => Promise<string | undefined>;
 	executeChain: (startNodeId: string) => Promise<void>;
@@ -97,6 +114,7 @@ interface UseChainExecutionReturn {
 	getIncomingLocalKnowledgeData: (
 		nodeId: string,
 	) => LocalKnowledgeInputData | null;
+	getIncomingSitePlannerData: (nodeId: string) => SitePlannerInputData | null;
 	getDownstreamNodes: (nodeId: string) => string[];
 	getUpstreamNodes: (nodeId: string) => string[];
 }
@@ -469,6 +487,79 @@ export function useChainExecution({
 		[nodes, connections],
 	);
 
+	// Get aggregated data for Site Planner node input
+	// Uses 2 input ports:
+	// - local-knowledge: LocalKnowledgeNode (provides location + category + content hooks) - REQUIRED
+	// - providers: ProviderEnrichmentNode (optional competitor data)
+	const getIncomingSitePlannerData = useCallback(
+		(nodeId: string): SitePlannerInputData | null => {
+			// Get all connections TO this node
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			const result: SitePlannerInputData = {
+				location: null,
+				serp: null,
+				providers: [],
+				localKnowledge: null,
+			};
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				// Determine which input port this connection is for
+				const targetPort = conn.toPort;
+
+				// Local Knowledge port - provides location, category, and content hooks
+				if (targetPort === 'local-knowledge' || !targetPort) {
+					if (isLocalKnowledgeNode(upstreamNode) && upstreamNode.output) {
+						const lkOutput = upstreamNode.output as LocalKnowledgeOutput;
+						result.localKnowledge = lkOutput;
+
+						// Extract location from Local Knowledge meta
+						if (lkOutput.meta) {
+							result.location = {
+								name: lkOutput.meta.city,
+								state: lkOutput.meta.state,
+								country: 'US',
+								lat: 0,
+								lng: 0,
+							};
+
+							// Extract category from Local Knowledge meta
+							if (lkOutput.meta.category) {
+								result.serp = {
+									category: lkOutput.meta.category,
+									serpQuality: 'Medium', // Default since LK doesn't have SERP score
+									serpScore: 5,
+								};
+							}
+						}
+					}
+				}
+
+				// Providers port - optional enriched competitor data
+				if (targetPort === 'providers' || !targetPort) {
+					if (
+						isProviderEnrichmentNode(upstreamNode) &&
+						upstreamNode.enrichedProviders &&
+						upstreamNode.enrichedProviders.length > 0
+					) {
+						result.providers = upstreamNode.enrichedProviders as EnrichedProvider[];
+					}
+				}
+			}
+
+			// Return null if we don't have Local Knowledge (the required input)
+			if (!result.localKnowledge) {
+				return null;
+			}
+
+			return result;
+		},
+		[nodes, connections]
+	);
+
 	// Propagate data to downstream output nodes
 	const propagateToOutputNodes = useCallback(
 		(sourceNodeId: string, responseData: string) => {
@@ -562,6 +653,7 @@ export function useChainExecution({
 		getIncomingProviderEnrichmentData,
 		getIncomingWebDesignerData,
 		getIncomingLocalKnowledgeData,
+		getIncomingSitePlannerData,
 		getDownstreamNodes,
 		getUpstreamNodes,
 	};

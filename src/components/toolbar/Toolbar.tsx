@@ -10,6 +10,7 @@ import {
   Palette,
   Image as ImageIcon,
   BookOpen,
+  FileText,
   Settings,
   Save,
   FolderOpen,
@@ -31,6 +32,7 @@ interface ToolbarProps {
   onAddWebDesignerNode: () => void;
   onAddImageGenNode: () => void;
   onAddLocalKnowledgeNode: () => void;
+  onAddSitePlannerNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -55,6 +57,7 @@ export function Toolbar({
   onAddWebDesignerNode,
   onAddImageGenNode,
   onAddLocalKnowledgeNode,
+  onAddSitePlannerNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -148,6 +151,14 @@ export function Toolbar({
           icon={<BookOpen size={20} />}
           label="Add Local Knowledge"
           className="bg-green-600 hover:bg-green-500 shadow-lg shadow-green-500/20"
+        />
+
+        {/* Add Site Planner Node */}
+        <ToolbarButton
+          onClick={onAddSitePlannerNode}
+          icon={<FileText size={20} />}
+          label="Add Site Planner"
+          className="bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-500/20"
         />
 
         <div className="h-6 w-px bg-slate-700 mx-1" />

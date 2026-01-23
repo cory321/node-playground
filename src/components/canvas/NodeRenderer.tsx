@@ -4,6 +4,7 @@ import {
   HoveredPort, 
   CategoryAnalysisResult,
   ProviderData,
+  LocationData,
   isLLMNode, 
   isOutputNode, 
   isLocationNode, 
@@ -14,8 +15,11 @@ import {
   isWebDesignerNode,
   isImageGenNode,
   isLocalKnowledgeNode,
+  isSitePlannerNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
+import { EnrichedProvider } from '@/types/enrichedProvider';
+import { LocalKnowledgeOutput } from '@/types/localKnowledge';
 import { LLMNode } from '../nodes/LLMNode';
 import { OutputNode } from '../nodes/OutputNode';
 import { LocationNode } from '../nodes/LocationNode';
@@ -26,6 +30,7 @@ import { CategorySelectorNode } from '../nodes/CategorySelectorNode';
 import { WebDesignerNode } from '../nodes/WebDesignerNode';
 import { ImageGenNode } from '../nodes/ImageGenNode';
 import { LocalKnowledgeNode } from '../nodes/LocalKnowledgeNode';
+import { SitePlannerNode } from '../nodes/SitePlannerNode';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -43,9 +48,12 @@ interface NodeRendererProps {
   onInputPortMouseUp: (nodeId: string) => void;
   onOutputPortMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onOutputPortMouseUp: (nodeId: string) => void;
-  // Multi-port handlers for CategorySelectorNode
+  // Multi-port handlers for CategorySelectorNode (output ports)
   onOutputPortMouseDownWithPort: (e: React.MouseEvent, nodeId: string, portId: string) => void;
   onOutputPortMouseUpWithPort: (nodeId: string, portId: string) => void;
+  // Multi-input port handlers for SitePlannerNode
+  onInputPortMouseDownWithPort: (e: React.MouseEvent, nodeId: string, portId: string) => void;
+  onInputPortMouseUpWithPort: (nodeId: string, portId: string) => void;
   connectingFrom: string | null;
   connectingTo: string | null;
   getIncomingData: (nodeId: string) => string | null;
@@ -92,7 +100,18 @@ interface NodeRendererProps {
     state: string | null;
     category?: string;
   } | null;
+  getIncomingSitePlannerData?: (nodeId: string) => {
+    location: LocationData | null;
+    serp: {
+      category: string;
+      serpQuality: 'Weak' | 'Medium' | 'Strong';
+      serpScore: number;
+    } | null;
+    providers: EnrichedProvider[];
+    localKnowledge: LocalKnowledgeOutput | null;
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
+  getInputPortConnections: (nodeId: string, portId: string) => Connection[];
 }
 
 export function NodeRenderer({
@@ -113,6 +132,8 @@ export function NodeRenderer({
   onOutputPortMouseUp,
   onOutputPortMouseDownWithPort,
   onOutputPortMouseUpWithPort,
+  onInputPortMouseDownWithPort,
+  onInputPortMouseUpWithPort,
   connectingFrom,
   connectingTo,
   getIncomingData,
@@ -122,7 +143,9 @@ export function NodeRenderer({
   getIncomingWebDesignerData,
   getIncomingProviderEnrichmentData,
   getIncomingLocalKnowledgeData,
+  getIncomingSitePlannerData,
   getPortConnections,
+  getInputPortConnections,
 }: NodeRendererProps) {
   const isConnectedInput = (nodeId: string) =>
     connections.some((c) => c.toId === nodeId);
@@ -380,6 +403,32 @@ export function NodeRenderer({
               connectingFrom={connectingFrom}
               connectingTo={connectingTo}
               incomingData={getIncomingLocalKnowledgeData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isSitePlannerNode(node)) {
+          return (
+            <SitePlannerNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingSitePlannerData?.(node.id) ?? null}
             />
           );
         }

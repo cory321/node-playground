@@ -16,3 +16,4 @@ export { CategorySelectorNode } from './CategorySelectorNode';
 export { WebDesignerNode } from './WebDesignerNode';
 export { ImageGenNode } from './ImageGenNode';
 export { LocalKnowledgeNode } from './LocalKnowledgeNode';
+export { SitePlannerNode } from './SitePlannerNode';

@@ -69,8 +69,9 @@ function App() {
   const [draggingNode, setDraggingNode] = useState<DragState | null>(null);
   const [resizingNode, setResizingNode] = useState<ResizeState | null>(null);
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
-  const [connectingFromPort, setConnectingFromPort] = useState<string | null>(null); // For multi-port nodes
+  const [connectingFromPort, setConnectingFromPort] = useState<string | null>(null); // For multi-port output nodes
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
+  const [connectingToPort, setConnectingToPort] = useState<string | null>(null); // For multi-port input nodes
   const [hoveredPort, setHoveredPort] = useState<HoveredPort | null>(null);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<Point>({ x: 0, y: 0 });
@@ -109,6 +110,7 @@ function App() {
     getIncomingProviderEnrichmentData,
     getIncomingWebDesignerData,
     getIncomingLocalKnowledgeData,
+    getIncomingSitePlannerData,
   } = useChainExecution({
     nodes,
     setNodes,
@@ -257,6 +259,15 @@ function App() {
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
 
+  const addSitePlannerNode = useCallback(() => {
+    const node = createNode(
+      'site-planner',
+      (window.innerWidth / 2 - transform.x - 220) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 280) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
   // Multi-port connection handlers for CategorySelectorNode
   const handleOutputPortMouseDownWithPort = useCallback(
     (e: React.MouseEvent, nodeId: string, portId: string) => {
@@ -327,12 +338,71 @@ function App() {
     [connectingFrom, connectingFromPort, nodes]
   );
 
-  // Get port connections helper
+  // Get port connections helper (for multi-output ports like CategorySelector)
   const getPortConnections = useCallback(
     (nodeId: string, portId: string) => {
       return connections.filter((c) => c.fromId === nodeId && c.fromPort === portId);
     },
     [connections]
+  );
+
+  // Get input port connections helper (for multi-input ports like SitePlanner)
+  const getInputPortConnections = useCallback(
+    (nodeId: string, portId: string) => {
+      return connections.filter((c) => c.toId === nodeId && c.toPort === portId);
+    },
+    [connections]
+  );
+
+  // Multi-input port handlers for SitePlannerNode
+  const handleInputPortMouseDownWithPort = useCallback(
+    (e: React.MouseEvent, nodeId: string, portId: string) => {
+      e.stopPropagation();
+      setConnectingTo(nodeId);
+      setConnectingToPort(portId);
+    },
+    []
+  );
+
+  const handleInputPortMouseUpWithPort = useCallback(
+    (nodeId: string, portId: string) => {
+      // If we were dragging from an output, complete the connection to this specific input port
+      if (connectingFrom && connectingFrom !== nodeId) {
+        setConnections((prev) => {
+          // Check if this exact connection already exists
+          const exists = prev.some(
+            (c) =>
+              c.fromId === connectingFrom &&
+              c.toId === nodeId &&
+              c.toPort === portId &&
+              c.fromPort === (connectingFromPort || undefined)
+          );
+          if (exists) return prev;
+
+          // For multi-input nodes, each port can only have one connection
+          // Remove any existing connection to this port
+          const filtered = prev.filter(
+            (c) => !(c.toId === nodeId && c.toPort === portId)
+          );
+
+          return [
+            ...filtered,
+            {
+              id: `c-${Date.now()}`,
+              fromId: connectingFrom,
+              toId: nodeId,
+              toPort: portId,
+              ...(connectingFromPort && { fromPort: connectingFromPort }),
+            },
+          ];
+        });
+      }
+      setConnectingFrom(null);
+      setConnectingFromPort(null);
+      setConnectingTo(null);
+      setConnectingToPort(null);
+    },
+    [connectingFrom, connectingFromPort]
   );
 
   // Mouse move handler
@@ -370,6 +440,7 @@ function App() {
     setResizingNode(null);
     setIsPanning(false);
     setConnectingFromPort(null);
+    setConnectingToPort(null);
     cancelConnection();
   }, [cancelConnection]);
 
@@ -441,6 +512,7 @@ function App() {
         onAddWebDesignerNode={addWebDesignerNode}
         onAddImageGenNode={addImageGenNode}
         onAddLocalKnowledgeNode={addLocalKnowledgeNode}
+        onAddSitePlannerNode={addSitePlannerNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -471,6 +543,7 @@ function App() {
           connectingFrom={connectingFrom}
           connectingFromPort={connectingFromPort}
           connectingTo={connectingTo}
+          connectingToPort={connectingToPort}
           mousePos={mousePos}
         />
 
@@ -493,6 +566,8 @@ function App() {
           onOutputPortMouseUp={completeConnectionToOutput}
           onOutputPortMouseDownWithPort={handleOutputPortMouseDownWithPort}
           onOutputPortMouseUpWithPort={handleOutputPortMouseUpWithPort}
+          onInputPortMouseDownWithPort={handleInputPortMouseDownWithPort}
+          onInputPortMouseUpWithPort={handleInputPortMouseUpWithPort}
           connectingFrom={connectingFrom}
           connectingTo={connectingTo}
           getIncomingData={getIncomingData}
@@ -502,7 +577,9 @@ function App() {
           getIncomingProviderEnrichmentData={getIncomingProviderEnrichmentData}
           getIncomingWebDesignerData={getIncomingWebDesignerData}
           getIncomingLocalKnowledgeData={getIncomingLocalKnowledgeData}
+          getIncomingSitePlannerData={getIncomingSitePlannerData}
           getPortConnections={getPortConnections}
+          getInputPortConnections={getInputPortConnections}
         />
       </div>
 

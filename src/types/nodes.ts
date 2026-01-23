@@ -10,6 +10,7 @@ export const NODE_TYPES = {
 	WEB_DESIGNER: 'web-designer',
 	IMAGE_GEN: 'image-gen',
 	LOCAL_KNOWLEDGE: 'local-knowledge',
+	SITE_PLANNER: 'site-planner',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -350,6 +351,30 @@ export interface LocalKnowledgeNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Site depth configuration
+export type SiteDepth = 'mvp' | 'standard' | 'comprehensive';
+
+// Site Planner Node specific data
+export interface SitePlannerNodeData extends BaseNodeData {
+	type: 'site-planner';
+	status: NodeStatus;
+	error: string | null;
+	// Configuration
+	depth: SiteDepth;
+	// Inputs (aggregated from multiple upstream nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputSerpScore: number | null;
+	inputSerpQuality: 'Weak' | 'Medium' | 'Strong' | null;
+	inputProviderCount: number;
+	inputHasLocalKnowledge: boolean;
+	// Generated output (SitePlannerOutput from sitePlanner.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
 export type NodeData =
 	| LLMNodeData
@@ -361,7 +386,8 @@ export type NodeData =
 	| CategorySelectorNodeData
 	| WebDesignerNodeData
 	| ImageGenNodeData
-	| LocalKnowledgeNodeData;
+	| LocalKnowledgeNodeData
+	| SitePlannerNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -410,6 +436,12 @@ export function isLocalKnowledgeNode(
 	node: NodeData,
 ): node is LocalKnowledgeNodeData {
 	return node.type === 'local-knowledge';
+}
+
+export function isSitePlannerNode(
+	node: NodeData,
+): node is SitePlannerNodeData {
+	return node.type === 'site-planner';
 }
 
 // Default node dimensions
@@ -463,6 +495,11 @@ export const NODE_DEFAULTS = {
 		width: 420,
 		height: 520,
 		color: '#22c55e', // Green - representing local/organic knowledge
+	},
+	'site-planner': {
+		width: 480,
+		height: 600,
+		color: '#3b82f6', // Blue - representing structured planning
 	},
 } as const;
 

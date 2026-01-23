@@ -1,6 +1,6 @@
 import React from 'react';
 import { Connection } from '@/types/connections';
-import { NodeData, isCategorySelectorNode } from '@/types/nodes';
+import { NodeData, isCategorySelectorNode, isSitePlannerNode } from '@/types/nodes';
 import { Point } from '@/types/canvas';
 import { 
   getConnectorPos, 
@@ -8,14 +8,17 @@ import {
   getMultiPortConnectorPos,
   MULTI_PORT_BASE_OFFSET,
   MULTI_PORT_SPACING,
+  SITE_PLANNER_INPUT_BASE_OFFSET,
+  SITE_PLANNER_INPUT_SPACING,
 } from '@/utils/geometry';
 
 interface ConnectionLayerProps {
   connections: Connection[];
   nodes: NodeData[];
   connectingFrom: string | null;
-  connectingFromPort: string | null; // Port ID when dragging from multi-port node
+  connectingFromPort: string | null; // Port ID when dragging from multi-port output node
   connectingTo: string | null;
+  connectingToPort: string | null; // Port ID when dragging from multi-port input node
   mousePos: Point;
 }
 
@@ -25,9 +28,14 @@ export function ConnectionLayer({
   connectingFrom,
   connectingFromPort,
   connectingTo,
+  connectingToPort,
   mousePos,
 }: ConnectionLayerProps) {
   const getNode = (id: string) => nodes.find((n) => n.id === id);
+
+  // Site Planner input port order for index lookup
+  // Local Knowledge provides location + category, so we only need 2 ports
+  const SITE_PLANNER_PORT_ORDER = ['local-knowledge', 'providers'];
 
   // Get the port position, handling multi-port nodes
   const getPortPosition = (
@@ -38,7 +46,7 @@ export function ConnectionLayer({
     const node = getNode(nodeId);
     if (!node) return { x: 0, y: 0 };
 
-    // Check if this is a multi-port node (category-selector) with a specific port
+    // Check if this is a multi-port output node (category-selector) with a specific port
     if (type === 'out' && portId && isCategorySelectorNode(node)) {
       // Find the visible index of this port
       const visibleCategories = node.categories.filter((c) => c.visible);
@@ -49,6 +57,20 @@ export function ConnectionLayer({
         const yOffset = MULTI_PORT_BASE_OFFSET + (portIndex * MULTI_PORT_SPACING) + (MULTI_PORT_SPACING / 2);
         return {
           x: node.x + node.width,
+          y: node.y + yOffset,
+        };
+      }
+    }
+
+    // Check if this is a multi-input node (site-planner) with a specific port
+    if (type === 'in' && portId && isSitePlannerNode(node)) {
+      const portIndex = SITE_PLANNER_PORT_ORDER.indexOf(portId);
+      
+      if (portIndex !== -1) {
+        // Calculate position matching MultiInputPort component layout
+        const yOffset = SITE_PLANNER_INPUT_BASE_OFFSET + (portIndex * SITE_PLANNER_INPUT_SPACING);
+        return {
+          x: node.x,
           y: node.y + yOffset,
         };
       }
@@ -159,17 +181,21 @@ export function ConnectionLayer({
   };
 
   // Render reverse tentative connection (dragging backward from input)
-  const renderReverseConnection = (toId: string) => {
-    const toNode = getNode(toId);
-    const end = getConnectorPos(toNode, 'in');
+  const renderReverseConnection = (toId: string, toPort: string | null) => {
+    const end = getPortPosition(toId, 'in', toPort || undefined);
     const d = getConnectionPath(mousePos, end);
+
+    // Use blue color for Site Planner multi-input ports
+    const toNode = getNode(toId);
+    const isSitePlanner = toNode && isSitePlannerNode(toNode);
+    const strokeColor = isSitePlanner ? '#3b82f6' : '#a855f7';
 
     return (
       <g key="tentative-reverse">
         <path
           d={d}
           fill="none"
-          stroke="#a855f7"
+          stroke={strokeColor}
           strokeWidth={4}
           strokeOpacity={0.2}
           strokeLinecap="round"
@@ -178,7 +204,7 @@ export function ConnectionLayer({
         <path
           d={d}
           fill="none"
-          stroke="#a855f7"
+          stroke={strokeColor}
           strokeWidth={2}
           strokeDasharray="8,8"
           strokeLinecap="round"
@@ -200,7 +226,7 @@ export function ConnectionLayer({
       {connectingFrom && renderTentativeConnection(connectingFrom, connectingFromPort)}
       
       {/* Render reverse tentative connection if dragging from input */}
-      {connectingTo && renderReverseConnection(connectingTo)}
+      {connectingTo && renderReverseConnection(connectingTo, connectingToPort)}
     </svg>
   );
 }

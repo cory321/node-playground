@@ -10,6 +10,7 @@ import {
 	Image as ImageIcon,
 	Sparkles,
 	BookOpen,
+	FileText,
 	LucideIcon,
 } from 'lucide-react';
 import {
@@ -25,6 +26,7 @@ import {
 	WebDesignerNodeData,
 	ImageGenNodeData,
 	LocalKnowledgeNodeData,
+	SitePlannerNodeData,
 	NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -394,6 +396,45 @@ registry.set('local-knowledge', {
 		inputState: null,
 		inputCategory: null,
 		manualCategory: '',
+		output: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register Site Planner node type
+// Note: hasInputPort is false because we use custom multi-input ports
+registry.set('site-planner', {
+	type: 'site-planner',
+	label: 'Site Planner',
+	icon: FileText,
+	color: NODE_DEFAULTS['site-planner'].color,
+	defaultWidth: NODE_DEFAULTS['site-planner'].width,
+	defaultHeight: NODE_DEFAULTS['site-planner'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): SitePlannerNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['site-planner'].width,
+		height: NODE_DEFAULTS['site-planner'].height,
+		title: 'Site Planner',
+		color: NODE_DEFAULTS['site-planner'].color,
+		type: 'site-planner',
+		status: 'idle',
+		error: null,
+		depth: 'standard',
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputSerpScore: null,
+		inputSerpQuality: null,
+		inputProviderCount: 0,
+		inputHasLocalKnowledge: false,
 		output: null,
 		lastGeneratedAt: null,
 	}),

@@ -19,6 +19,10 @@ export function getConnectorPos(
 export const MULTI_PORT_BASE_OFFSET = 140; // Below header + summary section
 export const MULTI_PORT_SPACING = 44; // Matches category row height
 
+// Constants for Site Planner multi-input port layout
+export const SITE_PLANNER_INPUT_BASE_OFFSET = 100; // Below header
+export const SITE_PLANNER_INPUT_SPACING = 44; // Matches input row height
+
 /**
  * Get the position of a multi-port connector (for nodes with multiple output ports)
  * Used by CategorySelectorNode where each visible category has its own output port
