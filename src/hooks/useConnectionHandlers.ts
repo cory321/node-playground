@@ -2,6 +2,13 @@ import { useCallback } from 'react';
 import { Connection } from '@/types/connections';
 import { NodeData } from '@/types/nodes';
 
+// Node types that support multiple outgoing connections from a single output port
+const MULTI_OUTPUT_NODE_TYPES = new Set([
+  'site-planner',
+  'local-knowledge',
+  'provider-enrichment',
+]);
+
 interface UseConnectionHandlersProps {
   connections: Connection[];
   setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
@@ -33,17 +40,23 @@ export function useConnectionHandlers({
   const startConnectionFromOutput = useCallback(
     (e: React.MouseEvent, nodeId: string) => {
       e.stopPropagation();
+      
+      // Check if this node type supports multiple output connections
+      const sourceNode = nodes.find((n) => n.id === nodeId);
+      const supportsMultiOutput = sourceNode && MULTI_OUTPUT_NODE_TYPES.has(sourceNode.type);
+      
       const existingConnections = connections.filter((c) => c.fromId === nodeId);
-      if (existingConnections.length > 0) {
-        // Disconnect existing and start dragging from target
+      if (existingConnections.length > 0 && !supportsMultiOutput) {
+        // For single-output nodes: Disconnect existing and start dragging from target
         const targetId = existingConnections[0].toId;
         setConnections(connections.filter((c) => c.fromId !== nodeId));
         setConnectingTo(targetId);
       } else {
+        // For multi-output nodes or nodes with no connections: start new connection
         setConnectingFrom(nodeId);
       }
     },
-    [connections, setConnections, setConnectingFrom, setConnectingTo]
+    [connections, setConnections, setConnectingFrom, setConnectingTo, nodes]
   );
 
   // Start connection from input port

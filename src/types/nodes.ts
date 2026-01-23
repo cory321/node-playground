@@ -11,6 +11,8 @@ export const NODE_TYPES = {
 	IMAGE_GEN: 'image-gen',
 	LOCAL_KNOWLEDGE: 'local-knowledge',
 	SITE_PLANNER: 'site-planner',
+	PROVIDER_PROFILE_GENERATOR: 'provider-profile-generator',
+	EDITORIAL_CONTENT_GENERATOR: 'editorial-content-generator',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -375,6 +377,99 @@ export interface SitePlannerNodeData extends BaseNodeData {
 	lastGeneratedAt: number | null;
 }
 
+// Editorial depth for provider profiles
+export type EditorialDepth = 'brief' | 'standard' | 'detailed';
+
+// Provider Profile Generation progress tracking
+export interface ProfileGenerationProgress {
+	currentProvider: string | null;
+	currentIndex: number;
+	totalCount: number;
+	phase: 'preparing' | 'generating' | 'validating' | 'complete';
+	completedProfiles: number;
+}
+
+// Provider Profile Generator Node specific data
+export interface ProviderProfileGeneratorNodeData extends BaseNodeData {
+	type: 'provider-profile-generator';
+	status: NodeStatus;
+	error: string | null;
+	// Configuration
+	editorialDepth: EditorialDepth;
+	includeComparison: boolean;
+	// Inputs (aggregated from multiple upstream nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputProviderCount: number;
+	inputHasBlueprint: boolean;
+	inputHasLocalKnowledge: boolean;
+	// Progress tracking
+	progress: ProfileGenerationProgress;
+	// Generated output (GeneratedProviderProfile[] from generatedProfile.ts)
+	output: unknown[] | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
+// Editorial Content Generation progress tracking
+export interface EditorialContentGenerationProgress {
+	currentPage: string | null;
+	currentIndex: number;
+	totalCount: number;
+	phase:
+		| 'preparing'
+		| 'generating'
+		| 'injecting-local'
+		| 'validating'
+		| 'complete';
+	completedPages: number;
+	currentSection: string | null;
+}
+
+// Quality level for editorial content
+export type EditorialQualityLevel = 'draft' | 'polished';
+
+// Editorial page types for content generation
+export type EditorialPageType =
+	| 'service_page'
+	| 'city_service_page'
+	| 'cost_guide'
+	| 'troubleshooting'
+	| 'buying_guide'
+	| 'diy_guide'
+	| 'local_expertise'
+	| 'about'
+	| 'methodology';
+
+// Editorial Content Generator Node specific data
+// Available Claude models for editorial content generation
+export type EditorialModelKey = 'claude-haiku' | 'claude-sonnet' | 'claude-opus';
+
+export interface EditorialContentGeneratorNodeData extends BaseNodeData {
+	type: 'editorial-content-generator';
+	status: NodeStatus;
+	error: string | null;
+	// Configuration
+	contentTypes: EditorialPageType[];
+	qualityLevel: EditorialQualityLevel;
+	modelKey: EditorialModelKey;
+	// Inputs (aggregated from multiple upstream nodes)
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputPageCount: number;
+	inputHasBlueprint: boolean;
+	inputHasLocalKnowledge: boolean;
+	inputHasSerpData: boolean;
+	// Progress tracking
+	progress: EditorialContentGenerationProgress;
+	// Generated output (GeneratedEditorialContent from editorialContent.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
 export type NodeData =
 	| LLMNodeData
@@ -387,7 +482,9 @@ export type NodeData =
 	| WebDesignerNodeData
 	| ImageGenNodeData
 	| LocalKnowledgeNodeData
-	| SitePlannerNodeData;
+	| SitePlannerNodeData
+	| ProviderProfileGeneratorNodeData
+	| EditorialContentGeneratorNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -442,6 +539,18 @@ export function isSitePlannerNode(
 	node: NodeData,
 ): node is SitePlannerNodeData {
 	return node.type === 'site-planner';
+}
+
+export function isProviderProfileGeneratorNode(
+	node: NodeData,
+): node is ProviderProfileGeneratorNodeData {
+	return node.type === 'provider-profile-generator';
+}
+
+export function isEditorialContentGeneratorNode(
+	node: NodeData,
+): node is EditorialContentGeneratorNodeData {
+	return node.type === 'editorial-content-generator';
 }
 
 // Default node dimensions
@@ -500,6 +609,16 @@ export const NODE_DEFAULTS = {
 		width: 480,
 		height: 600,
 		color: '#3b82f6', // Blue - representing structured planning
+	},
+	'provider-profile-generator': {
+		width: 480,
+		height: 620,
+		color: '#f59e0b', // Amber - representing profile/content generation
+	},
+	'editorial-content-generator': {
+		width: 420,
+		height: 520,
+		color: '#10b981', // Emerald - representing editorial/content creation
 	},
 } as const;
 

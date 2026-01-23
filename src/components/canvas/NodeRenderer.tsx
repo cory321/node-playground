@@ -16,6 +16,8 @@ import {
   isImageGenNode,
   isLocalKnowledgeNode,
   isSitePlannerNode,
+  isProviderProfileGeneratorNode,
+  isEditorialContentGeneratorNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { EnrichedProvider } from '@/types/enrichedProvider';
@@ -31,6 +33,9 @@ import { WebDesignerNode } from '../nodes/WebDesignerNode';
 import { ImageGenNode } from '../nodes/ImageGenNode';
 import { LocalKnowledgeNode } from '../nodes/LocalKnowledgeNode';
 import { SitePlannerNode } from '../nodes/SitePlannerNode';
+import { ProviderProfileGeneratorNode } from '../nodes/ProviderProfileGeneratorNode';
+import { EditorialContentGeneratorNode } from '../nodes/EditorialContentGeneratorNode';
+import { SitePlannerOutput } from '@/types/sitePlanner';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -110,6 +115,16 @@ interface NodeRendererProps {
     providers: EnrichedProvider[];
     localKnowledge: LocalKnowledgeOutput | null;
   } | null;
+  getIncomingProfileGeneratorData?: (nodeId: string) => {
+    blueprint: SitePlannerOutput | null;
+    providers: EnrichedProvider[];
+    localKnowledge: LocalKnowledgeOutput | null;
+  } | null;
+  getIncomingEditorialContentData?: (nodeId: string) => {
+    blueprint: SitePlannerOutput | null;
+    localKnowledge: LocalKnowledgeOutput | null;
+    serpData: CategoryAnalysisResult | null;
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
   getInputPortConnections: (nodeId: string, portId: string) => Connection[];
 }
@@ -144,6 +159,8 @@ export function NodeRenderer({
   getIncomingProviderEnrichmentData,
   getIncomingLocalKnowledgeData,
   getIncomingSitePlannerData,
+  getIncomingProfileGeneratorData,
+  getIncomingEditorialContentData,
   getPortConnections,
   getInputPortConnections,
 }: NodeRendererProps) {
@@ -429,6 +446,58 @@ export function NodeRenderer({
               connectingTo={connectingTo}
               getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
               incomingData={getIncomingSitePlannerData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isProviderProfileGeneratorNode(node)) {
+          return (
+            <ProviderProfileGeneratorNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingProfileGeneratorData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isEditorialContentGeneratorNode(node)) {
+          return (
+            <EditorialContentGeneratorNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingEditorialContentData?.(node.id) ?? null}
             />
           );
         }

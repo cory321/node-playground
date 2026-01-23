@@ -182,6 +182,8 @@ export async function generateSitePlan(
 		contentClusters,
 		internalLinking,
 		launchPhases,
+		localKnowledge,
+		providers,
 		meta: {
 			generatedAt: new Date().toISOString(),
 			depth,

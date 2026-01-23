@@ -1,6 +1,6 @@
 import React from 'react';
 import { Connection } from '@/types/connections';
-import { NodeData, isCategorySelectorNode, isSitePlannerNode } from '@/types/nodes';
+import { NodeData, isCategorySelectorNode, isSitePlannerNode, isProviderProfileGeneratorNode, isEditorialContentGeneratorNode } from '@/types/nodes';
 import { Point } from '@/types/canvas';
 import { 
   getConnectorPos, 
@@ -10,7 +10,13 @@ import {
   MULTI_PORT_SPACING,
   SITE_PLANNER_INPUT_BASE_OFFSET,
   SITE_PLANNER_INPUT_SPACING,
+  PROFILE_GENERATOR_INPUT_BASE_OFFSET,
+  PROFILE_GENERATOR_INPUT_SPACING,
 } from '@/utils/geometry';
+
+// Editorial Content Generator uses same spacing values as Profile Generator
+const EDITORIAL_INPUT_BASE_OFFSET = 100;
+const EDITORIAL_INPUT_SPACING = 44;
 
 interface ConnectionLayerProps {
   connections: Connection[];
@@ -36,6 +42,14 @@ export function ConnectionLayer({
   // Site Planner input port order for index lookup
   // Local Knowledge provides location + category, so we only need 2 ports
   const SITE_PLANNER_PORT_ORDER = ['local-knowledge', 'providers'];
+
+  // Profile Generator input port order for index lookup
+  // Blueprint (site plan) includes localKnowledge and providers
+  const PROFILE_GENERATOR_PORT_ORDER = ['blueprint'];
+
+  // Editorial Content Generator input port order for index lookup
+  // Blueprint (includes localKnowledge), SERP data (optional)
+  const EDITORIAL_PORT_ORDER = ['blueprint', 'serp'];
 
   // Get the port position, handling multi-port nodes
   const getPortPosition = (
@@ -69,6 +83,34 @@ export function ConnectionLayer({
       if (portIndex !== -1) {
         // Calculate position matching MultiInputPort component layout
         const yOffset = SITE_PLANNER_INPUT_BASE_OFFSET + (portIndex * SITE_PLANNER_INPUT_SPACING);
+        return {
+          x: node.x,
+          y: node.y + yOffset,
+        };
+      }
+    }
+
+    // Check if this is a multi-input node (provider-profile-generator) with a specific port
+    if (type === 'in' && portId && isProviderProfileGeneratorNode(node)) {
+      const portIndex = PROFILE_GENERATOR_PORT_ORDER.indexOf(portId);
+      
+      if (portIndex !== -1) {
+        // Calculate position matching MultiInputPort component layout
+        const yOffset = PROFILE_GENERATOR_INPUT_BASE_OFFSET + (portIndex * PROFILE_GENERATOR_INPUT_SPACING);
+        return {
+          x: node.x,
+          y: node.y + yOffset,
+        };
+      }
+    }
+
+    // Check if this is a multi-input node (editorial-content-generator) with a specific port
+    if (type === 'in' && portId && isEditorialContentGeneratorNode(node)) {
+      const portIndex = EDITORIAL_PORT_ORDER.indexOf(portId);
+      
+      if (portIndex !== -1) {
+        // Calculate position matching MultiInputPort component layout
+        const yOffset = EDITORIAL_INPUT_BASE_OFFSET + (portIndex * EDITORIAL_INPUT_SPACING);
         return {
           x: node.x,
           y: node.y + yOffset,
@@ -185,10 +227,11 @@ export function ConnectionLayer({
     const end = getPortPosition(toId, 'in', toPort || undefined);
     const d = getConnectionPath(mousePos, end);
 
-    // Use blue color for Site Planner multi-input ports
+    // Use appropriate color for multi-input port nodes
     const toNode = getNode(toId);
     const isSitePlanner = toNode && isSitePlannerNode(toNode);
-    const strokeColor = isSitePlanner ? '#3b82f6' : '#a855f7';
+    const isProfileGenerator = toNode && isProviderProfileGeneratorNode(toNode);
+    const strokeColor = isSitePlanner ? '#3b82f6' : isProfileGenerator ? '#f59e0b' : '#a855f7';
 
     return (
       <g key="tentative-reverse">

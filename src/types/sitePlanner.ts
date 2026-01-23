@@ -3,7 +3,7 @@
 
 import { LocationData } from './nodes';
 import { EnrichedProvider } from './enrichedProvider';
-import { LocalKnowledgeOutput } from './localKnowledge';
+import { LocalKnowledgeOutput, createEmptyLocalKnowledge } from './localKnowledge';
 
 // ============================================================================
 // PAGE TYPES
@@ -212,6 +212,12 @@ export interface SitePlannerOutput {
 
 	// 6. Build Order
 	launchPhases: LaunchPhase[];
+
+	// 7. Local Knowledge (pass-through for downstream nodes)
+	localKnowledge: LocalKnowledgeOutput;
+
+	// 8. Enriched Providers (pass-through for downstream nodes)
+	providers: EnrichedProvider[];
 
 	// Metadata
 	meta: {
@@ -499,6 +505,8 @@ export function createEmptySitePlan(
 		contentClusters: [],
 		internalLinking: { rules: [] },
 		launchPhases: [],
+		localKnowledge: createEmptyLocalKnowledge(city, state, category),
+		providers: [],
 		meta: {
 			generatedAt: new Date().toISOString(),
 			depth,

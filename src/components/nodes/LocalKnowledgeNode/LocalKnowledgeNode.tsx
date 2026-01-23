@@ -82,8 +82,10 @@ export function LocalKnowledgeNode({
 			if (incomingData.city !== node.inputCity) {
 				updates.inputCity = incomingData.city;
 			}
-			if (incomingData.county !== node.inputCounty) {
-				updates.inputCounty = incomingData.county || null;
+			// Normalize undefined/null comparison for county to prevent infinite loop
+			const incomingCountyNormalized = incomingData.county ?? null;
+			if (incomingCountyNormalized !== node.inputCounty) {
+				updates.inputCounty = incomingCountyNormalized;
 			}
 			if (incomingData.state !== node.inputState) {
 				updates.inputState = incomingData.state;

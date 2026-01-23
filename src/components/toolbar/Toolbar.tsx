@@ -11,6 +11,8 @@ import {
   Image as ImageIcon,
   BookOpen,
   FileText,
+  UserCircle,
+  Newspaper,
   Settings,
   Save,
   FolderOpen,
@@ -33,6 +35,8 @@ interface ToolbarProps {
   onAddImageGenNode: () => void;
   onAddLocalKnowledgeNode: () => void;
   onAddSitePlannerNode: () => void;
+  onAddProfileGeneratorNode: () => void;
+  onAddEditorialContentNode: () => void;
   onOpenSettings: () => void;
   onOpenSave: () => void;
   onOpenLoad: () => void;
@@ -58,6 +62,8 @@ export function Toolbar({
   onAddImageGenNode,
   onAddLocalKnowledgeNode,
   onAddSitePlannerNode,
+  onAddProfileGeneratorNode,
+  onAddEditorialContentNode,
   onOpenSettings,
   onOpenSave,
   onOpenLoad,
@@ -158,7 +164,23 @@ export function Toolbar({
           onClick={onAddSitePlannerNode}
           icon={<FileText size={20} />}
           label="Add Site Planner"
+          className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20"
+        />
+
+        {/* Add Profile Generator Node */}
+        <ToolbarButton
+          onClick={onAddProfileGeneratorNode}
+          icon={<UserCircle size={20} />}
+          label="Add Profile Generator"
           className="bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-500/20"
+        />
+
+        {/* Add Editorial Content Node */}
+        <ToolbarButton
+          onClick={onAddEditorialContentNode}
+          icon={<Newspaper size={20} />}
+          label="Add Editorial Content"
+          className="bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20"
         />
 
         <div className="h-6 w-px bg-slate-700 mx-1" />

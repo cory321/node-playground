@@ -1,4 +1,3 @@
-import { ComponentType } from 'react';
 import {
 	Brain,
 	Monitor,
@@ -11,6 +10,8 @@ import {
 	Sparkles,
 	BookOpen,
 	FileText,
+	UserCircle,
+	Newspaper,
 	LucideIcon,
 } from 'lucide-react';
 import {
@@ -27,6 +28,8 @@ import {
 	ImageGenNodeData,
 	LocalKnowledgeNodeData,
 	SitePlannerNodeData,
+	ProviderProfileGeneratorNodeData,
+	EditorialContentGeneratorNodeData,
 	NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -435,6 +438,101 @@ registry.set('site-planner', {
 		inputSerpQuality: null,
 		inputProviderCount: 0,
 		inputHasLocalKnowledge: false,
+		output: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register Provider Profile Generator node type
+// Note: hasInputPort is false because we use custom multi-input ports
+registry.set('provider-profile-generator', {
+	type: 'provider-profile-generator',
+	label: 'Profile Generator',
+	icon: UserCircle,
+	color: NODE_DEFAULTS['provider-profile-generator'].color,
+	defaultWidth: NODE_DEFAULTS['provider-profile-generator'].width,
+	defaultHeight: NODE_DEFAULTS['provider-profile-generator'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): ProviderProfileGeneratorNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['provider-profile-generator'].width,
+		height: NODE_DEFAULTS['provider-profile-generator'].height,
+		title: 'Profile Generator',
+		color: NODE_DEFAULTS['provider-profile-generator'].color,
+		type: 'provider-profile-generator',
+		status: 'idle',
+		error: null,
+		editorialDepth: 'standard',
+		includeComparison: true,
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputProviderCount: 0,
+		inputHasBlueprint: false,
+		inputHasLocalKnowledge: false,
+		progress: {
+			currentProvider: null,
+			currentIndex: 0,
+			totalCount: 0,
+			phase: 'preparing',
+			completedProfiles: 0,
+		},
+		output: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register Editorial Content Generator node type
+// Note: hasInputPort is false because we use custom multi-input ports
+registry.set('editorial-content-generator', {
+	type: 'editorial-content-generator',
+	label: 'Editorial Content',
+	icon: Newspaper,
+	color: NODE_DEFAULTS['editorial-content-generator'].color,
+	defaultWidth: NODE_DEFAULTS['editorial-content-generator'].width,
+	defaultHeight: NODE_DEFAULTS['editorial-content-generator'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): EditorialContentGeneratorNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['editorial-content-generator'].width,
+		height: NODE_DEFAULTS['editorial-content-generator'].height,
+		title: 'Editorial Content',
+		color: NODE_DEFAULTS['editorial-content-generator'].color,
+		type: 'editorial-content-generator',
+		status: 'idle',
+		error: null,
+		contentTypes: ['service_page', 'cost_guide'],
+		qualityLevel: 'draft',
+		modelKey: 'claude-haiku',
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputPageCount: 0,
+		inputHasBlueprint: false,
+		inputHasLocalKnowledge: false,
+		inputHasSerpData: false,
+		progress: {
+			currentPage: null,
+			currentIndex: 0,
+			totalCount: 0,
+			phase: 'preparing',
+			completedPages: 0,
+			currentSection: null,
+		},
 		output: null,
 		lastGeneratedAt: null,
 	}),

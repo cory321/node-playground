@@ -111,6 +111,8 @@ function App() {
     getIncomingWebDesignerData,
     getIncomingLocalKnowledgeData,
     getIncomingSitePlannerData,
+    getIncomingProfileGeneratorData,
+    getIncomingEditorialContentData,
   } = useChainExecution({
     nodes,
     setNodes,
@@ -264,6 +266,24 @@ function App() {
       'site-planner',
       (window.innerWidth / 2 - transform.x - 220) / transform.scale,
       (window.innerHeight / 2 - transform.y - 280) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addProfileGeneratorNode = useCallback(() => {
+    const node = createNode(
+      'provider-profile-generator',
+      (window.innerWidth / 2 - transform.x - 240) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 310) / transform.scale
+    );
+    if (node) setNodes((prev) => [...prev, node]);
+  }, [transform]);
+
+  const addEditorialContentNode = useCallback(() => {
+    const node = createNode(
+      'editorial-content-generator',
+      (window.innerWidth / 2 - transform.x - 210) / transform.scale,
+      (window.innerHeight / 2 - transform.y - 260) / transform.scale
     );
     if (node) setNodes((prev) => [...prev, node]);
   }, [transform]);
@@ -513,6 +533,8 @@ function App() {
         onAddImageGenNode={addImageGenNode}
         onAddLocalKnowledgeNode={addLocalKnowledgeNode}
         onAddSitePlannerNode={addSitePlannerNode}
+        onAddProfileGeneratorNode={addProfileGeneratorNode}
+        onAddEditorialContentNode={addEditorialContentNode}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenSave={() => setShowSaveModal(true)}
         onOpenLoad={() => setShowLoadModal(true)}
@@ -578,6 +600,8 @@ function App() {
           getIncomingWebDesignerData={getIncomingWebDesignerData}
           getIncomingLocalKnowledgeData={getIncomingLocalKnowledgeData}
           getIncomingSitePlannerData={getIncomingSitePlannerData}
+          getIncomingProfileGeneratorData={getIncomingProfileGeneratorData}
+          getIncomingEditorialContentData={getIncomingEditorialContentData}
           getPortConnections={getPortConnections}
           getInputPortConnections={getInputPortConnections}
         />

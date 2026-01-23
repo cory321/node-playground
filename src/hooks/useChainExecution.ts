@@ -14,10 +14,12 @@ import {
 	isWebDesignerNode,
 	isImageGenNode,
 	isLocalKnowledgeNode,
+	isSitePlannerNode,
 	DemographicsData,
 } from '@/types/nodes';
 import { EnrichedProvider } from '@/types/enrichedProvider';
 import { LocalKnowledgeOutput } from '@/types/localKnowledge';
+import { SitePlannerOutput } from '@/types/sitePlanner';
 import { Connection } from '@/types/connections';
 import { callLLM } from '@/api/llm';
 import { getLeadEconomics } from '@/api/serp/tiers';
@@ -98,6 +100,20 @@ interface SitePlannerInputData {
 	localKnowledge: LocalKnowledgeOutput | null;
 }
 
+// Provider Profile Generator node input data (aggregated from multiple upstream nodes)
+interface ProfileGeneratorInputData {
+	blueprint: SitePlannerOutput | null;
+	providers: EnrichedProvider[];
+	localKnowledge: LocalKnowledgeOutput | null;
+}
+
+// Editorial Content Generator node input data (aggregated from multiple upstream nodes)
+interface EditorialContentInputData {
+	blueprint: SitePlannerOutput | null;
+	localKnowledge: LocalKnowledgeOutput | null;
+	serpData: CategoryAnalysisResult | null;
+}
+
 interface UseChainExecutionReturn {
 	executeLLMNode: (nodeId: string) => Promise<string | undefined>;
 	executeChain: (startNodeId: string) => Promise<void>;
@@ -115,6 +131,12 @@ interface UseChainExecutionReturn {
 		nodeId: string,
 	) => LocalKnowledgeInputData | null;
 	getIncomingSitePlannerData: (nodeId: string) => SitePlannerInputData | null;
+	getIncomingProfileGeneratorData: (
+		nodeId: string,
+	) => ProfileGeneratorInputData | null;
+	getIncomingEditorialContentData: (
+		nodeId: string,
+	) => EditorialContentInputData | null;
 	getDownstreamNodes: (nodeId: string) => string[];
 	getUpstreamNodes: (nodeId: string) => string[];
 }
@@ -560,6 +582,119 @@ export function useChainExecution({
 		[nodes, connections]
 	);
 
+	// Get aggregated data for Provider Profile Generator node input
+	// Uses 1 input port:
+	// - blueprint: SitePlannerNode output - REQUIRED (includes localKnowledge and providers)
+	const getIncomingProfileGeneratorData = useCallback(
+		(nodeId: string): ProfileGeneratorInputData | null => {
+			// Get all connections TO this node
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			const result: ProfileGeneratorInputData = {
+				blueprint: null,
+				providers: [],
+				localKnowledge: null,
+			};
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				// Blueprint port - comes from Site Planner node
+				if (isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+					result.blueprint = upstreamNode.output as SitePlannerOutput;
+				}
+			}
+
+			// Extract localKnowledge and providers from blueprint (passed through from Site Planner)
+			if (result.blueprint) {
+				if (result.blueprint.localKnowledge) {
+					result.localKnowledge = result.blueprint.localKnowledge;
+				}
+				if (result.blueprint.providers && result.blueprint.providers.length > 0) {
+					result.providers = result.blueprint.providers;
+				}
+			}
+
+			// Return null if we don't have all required inputs
+			if (!result.blueprint || result.providers.length === 0 || !result.localKnowledge) {
+				return null;
+			}
+
+			return result;
+		},
+		[nodes, connections]
+	);
+
+	// Get aggregated data for Editorial Content Generator node input
+	// Uses 2 input ports:
+	// - blueprint: SitePlannerNode output - REQUIRED (includes localKnowledge)
+	// - serp: CategorySelectorNode - OPTIONAL (for competitor content gap analysis)
+	const getIncomingEditorialContentData = useCallback(
+		(nodeId: string): EditorialContentInputData | null => {
+			// Get all connections TO this node
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			const result: EditorialContentInputData = {
+				blueprint: null,
+				localKnowledge: null,
+				serpData: null,
+			};
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				// Determine which input port this connection is for
+				const targetPort = conn.toPort;
+
+				// Blueprint port - comes from Site Planner node
+				if (targetPort === 'blueprint' || !targetPort) {
+					if (isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+						result.blueprint = upstreamNode.output as SitePlannerOutput;
+					}
+				}
+
+				// SERP port - optional, comes from CategorySelector node
+				if (targetPort === 'serp') {
+					if (isCategorySelectorNode(upstreamNode)) {
+						// Get the category from the connection's fromPort
+						const category = upstreamNode.categories.find(
+							(c) => c.id === conn.fromPort
+						);
+						if (category && category.visible) {
+							result.serpData = {
+								category: category.category,
+								tier: 'tier1',
+								serpQuality: category.serpQuality,
+								serpScore: category.serpScore,
+								competition: 'Medium',
+								leadValue: category.leadValue,
+								urgency: 'Medium',
+								verdict: category.verdict,
+								reasoning: '',
+								fromCache: false,
+							};
+						}
+					}
+				}
+			}
+
+			// Extract localKnowledge from blueprint (passed through from Site Planner)
+			if (result.blueprint?.localKnowledge) {
+				result.localKnowledge = result.blueprint.localKnowledge;
+			}
+
+			// Return null if we don't have the required inputs
+			if (!result.blueprint || !result.localKnowledge) {
+				return null;
+			}
+
+			return result;
+		},
+		[nodes, connections]
+	);
+
 	// Propagate data to downstream output nodes
 	const propagateToOutputNodes = useCallback(
 		(sourceNodeId: string, responseData: string) => {
@@ -654,6 +789,8 @@ export function useChainExecution({
 		getIncomingWebDesignerData,
 		getIncomingLocalKnowledgeData,
 		getIncomingSitePlannerData,
+		getIncomingProfileGeneratorData,
+		getIncomingEditorialContentData,
 		getDownstreamNodes,
 		getUpstreamNodes,
 	};

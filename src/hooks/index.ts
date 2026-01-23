@@ -10,3 +10,4 @@ export { useProviderEnrichment } from './useProviderEnrichment';
 export { usePromptGeneration } from './usePromptGeneration';
 export { useLocalKnowledge } from './useLocalKnowledge';
 export { useSitePlanner } from './useSitePlanner';
+export { useProviderProfileGenerator } from './useProviderProfileGenerator';
