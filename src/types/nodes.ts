@@ -19,6 +19,7 @@ export const NODE_TYPES = {
 	IMAGE_SOURCE: 'image-source',
 	BRAND_DESIGN: 'brand-design',
 	DATA_VIEWER: 'data-viewer',
+	CODE_GENERATION: 'code-generation',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -451,7 +452,10 @@ export type EditorialPageType =
 
 // Editorial Content Generator Node specific data
 // Available Claude models for editorial content generation
-export type EditorialModelKey = 'claude-haiku' | 'claude-sonnet' | 'claude-opus';
+export type EditorialModelKey =
+	| 'claude-haiku'
+	| 'claude-sonnet'
+	| 'claude-opus';
 
 export interface EditorialContentGeneratorNodeData extends BaseNodeData {
 	type: 'editorial-content-generator';
@@ -638,6 +642,56 @@ export interface DataViewerNodeData extends BaseNodeData {
 	lastUpdated: number | null;
 }
 
+// Code Generation progress tracking
+export type CodeGenerationPhase =
+	| 'preparing'
+	| 'routing'
+	| 'styling'
+	| 'content'
+	| 'assembling'
+	| 'validating'
+	| 'complete';
+
+export interface CodeGenerationProgress {
+	phase: CodeGenerationPhase;
+	currentFile: string | null;
+	filesGenerated: number;
+	totalFiles: number;
+	bytesGenerated: number;
+}
+
+// Code Generation output format
+export type CodeOutputFormat = 'files' | 'zip';
+
+// Code Generation Node specific data
+// Final pipeline node: transforms all upstream outputs into deployable Next.js codebase
+export interface CodeGenerationNodeData extends BaseNodeData {
+	type: 'code-generation';
+	status: NodeStatus;
+	error: string | null;
+	// Input tracking (6 inputs from upstream nodes)
+	inputHasSitePlan: boolean;
+	inputHasSEO: boolean;
+	inputHasBrandDesign: boolean;
+	inputHasEditorial: boolean;
+	inputHasProfiles: boolean;
+	inputHasComparison: boolean;
+	// Derived metadata from inputs
+	inputCity: string | null;
+	inputState: string | null;
+	inputCategory: string | null;
+	inputPageCount: number;
+	// Configuration
+	outputFormat: CodeOutputFormat;
+	includeReadme: boolean;
+	// Progress tracking
+	progress: CodeGenerationProgress;
+	// Generated output (GeneratedCodebase from codeGeneration.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
 // Union type for all node types
 export type NodeData =
 	| LLMNodeData
@@ -658,7 +712,8 @@ export type NodeData =
 	| DesignPromptNodeData
 	| ImageSourceNodeData
 	| BrandDesignNodeData
-	| DataViewerNodeData;
+	| DataViewerNodeData
+	| CodeGenerationNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -709,9 +764,7 @@ export function isLocalKnowledgeNode(
 	return node.type === 'local-knowledge';
 }
 
-export function isSitePlannerNode(
-	node: NodeData,
-): node is SitePlannerNodeData {
+export function isSitePlannerNode(node: NodeData): node is SitePlannerNodeData {
 	return node.type === 'site-planner';
 }
 
@@ -745,22 +798,22 @@ export function isDesignPromptNode(
 	return node.type === 'design-prompt';
 }
 
-export function isImageSourceNode(
-	node: NodeData,
-): node is ImageSourceNodeData {
+export function isImageSourceNode(node: NodeData): node is ImageSourceNodeData {
 	return node.type === 'image-source';
 }
 
-export function isBrandDesignNode(
-	node: NodeData,
-): node is BrandDesignNodeData {
+export function isBrandDesignNode(node: NodeData): node is BrandDesignNodeData {
 	return node.type === 'brand-design';
 }
 
-export function isDataViewerNode(
-	node: NodeData,
-): node is DataViewerNodeData {
+export function isDataViewerNode(node: NodeData): node is DataViewerNodeData {
 	return node.type === 'data-viewer';
+}
+
+export function isCodeGenerationNode(
+	node: NodeData,
+): node is CodeGenerationNodeData {
+	return node.type === 'code-generation';
 }
 
 // Default node dimensions
@@ -859,6 +912,11 @@ export const NODE_DEFAULTS = {
 		width: 420,
 		height: 480,
 		color: '#64748b', // Slate - neutral for viewing data
+	},
+	'code-generation': {
+		width: 520,
+		height: 700,
+		color: '#059669', // Emerald - representing code/generation
 	},
 } as const;
 

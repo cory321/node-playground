@@ -48,6 +48,7 @@ interface ToolbarProps {
 	onAddDesignPromptNode: () => void;
 	onAddBrandDesignNode: () => void;
 	onAddDataViewerNode: () => void;
+	onAddCodeGenerationNode: () => void;
 	onOpenSettings: () => void;
 	onOpenSave: () => void;
 	onOpenLoad: () => void;
@@ -81,6 +82,7 @@ export function Toolbar({
 	onAddDesignPromptNode,
 	onAddBrandDesignNode,
 	onAddDataViewerNode,
+	onAddCodeGenerationNode,
 	onOpenSettings,
 	onOpenSave,
 	onOpenLoad,
@@ -246,6 +248,14 @@ export function Toolbar({
 					icon={<Code2 size={20} />}
 					label="Add Data Viewer"
 					className="bg-slate-600 hover:bg-slate-500 shadow-lg shadow-slate-500/20"
+				/>
+
+				{/* Add Code Generation Node */}
+				<ToolbarButton
+					onClick={onAddCodeGenerationNode}
+					icon={<Code2 size={20} />}
+					label="Add Code Generation"
+					className="bg-emerald-700 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
 				/>
 
 				<div className="h-6 w-px bg-slate-700 mx-1" />

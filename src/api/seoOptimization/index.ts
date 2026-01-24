@@ -370,6 +370,13 @@ export async function optimizeSEO(
 			issuesByType: {},
 		},
 		generatedAt: new Date().toISOString(),
+		// Pass-through source data for downstream nodes (e.g., Code Generation)
+		// This allows Code Generation to access editorial/comparison data
+		// without needing separate connections to those nodes
+		sourceData: {
+			editorialContent: editorialContent || null,
+			comparisonData: comparisonData || null,
+		},
 	};
 
 	// Run package validation

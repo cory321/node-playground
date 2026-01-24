@@ -8,6 +8,7 @@ import {
 	isEditorialContentGeneratorNode,
 	isComparisonDataNode,
 	isSEOOptimizationNode,
+	isCodeGenerationNode,
 } from '@/types/nodes';
 import { Point } from '@/types/canvas';
 import {
@@ -33,6 +34,10 @@ const COMPARISON_DATA_INPUT_SPACING = 44;
 // SEO Optimization Node uses same spacing values
 const SEO_OPTIMIZATION_INPUT_BASE_OFFSET = 100;
 const SEO_OPTIMIZATION_INPUT_SPACING = 44;
+
+// Code Generation Node uses same spacing values
+const CODE_GEN_INPUT_BASE_OFFSET = 100;
+const CODE_GEN_INPUT_SPACING = 44;
 
 interface ConnectionLayerProps {
 	connections: Connection[];
@@ -77,9 +82,16 @@ export function ConnectionLayer({
 	// SEO Optimization input port order for index lookup
 	const SEO_OPTIMIZATION_PORT_ORDER = [
 		'blueprint',
-		'providers',
 		'editorial',
 		'comparison',
+	];
+
+	// Code Generation input port order for index lookup
+	const CODE_GEN_PORT_ORDER = [
+		'sitePlan',
+		'seoPackage',
+		'brandDesign',
+		'profiles',
 	];
 
 	// Get the port position, handling multi-port nodes
@@ -182,6 +194,22 @@ export function ConnectionLayer({
 				const yOffset =
 					SEO_OPTIMIZATION_INPUT_BASE_OFFSET +
 					portIndex * SEO_OPTIMIZATION_INPUT_SPACING;
+				return {
+					x: node.x,
+					y: node.y + yOffset,
+				};
+			}
+		}
+
+		// Check if this is a multi-input node (code-generation) with a specific port
+		if (type === 'in' && portId && isCodeGenerationNode(node)) {
+			const portIndex = CODE_GEN_PORT_ORDER.indexOf(portId);
+
+			if (portIndex !== -1) {
+				// Calculate position matching MultiInputPort component layout
+				const yOffset =
+					CODE_GEN_INPUT_BASE_OFFSET +
+					portIndex * CODE_GEN_INPUT_SPACING;
 				return {
 					x: node.x,
 					y: node.y + yOffset,
@@ -306,13 +334,16 @@ export function ConnectionLayer({
 		const isSitePlanner = toNode && isSitePlannerNode(toNode);
 		const isProfileGenerator = toNode && isProviderProfileGeneratorNode(toNode);
 		const isSEOOpt = toNode && isSEOOptimizationNode(toNode);
+		const isCodeGen = toNode && isCodeGenerationNode(toNode);
 		const strokeColor = isSitePlanner
 			? '#3b82f6'
 			: isProfileGenerator
 				? '#f59e0b'
 				: isSEOOpt
 					? '#0d9488'
-					: '#a855f7';
+					: isCodeGen
+						? '#059669'
+						: '#a855f7';
 
 		return (
 			<g key="tentative-reverse">

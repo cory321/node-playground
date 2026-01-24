@@ -144,6 +144,7 @@ function App() {
 		getIncomingDesignPromptData,
 		getIncomingBrandDesignData,
 		getIncomingStructuredData,
+		getIncomingCodeGenerationData,
 	} = useChainExecution({
 		nodes,
 		setNodes,
@@ -369,6 +370,15 @@ function App() {
 			'data-viewer',
 			(window.innerWidth / 2 - transform.x - 210) / transform.scale,
 			(window.innerHeight / 2 - transform.y - 240) / transform.scale,
+		);
+		if (node) setNodes((prev) => [...prev, node]);
+	}, [transform]);
+
+	const addCodeGenerationNode = useCallback(() => {
+		const node = createNode(
+			'code-generation',
+			(window.innerWidth / 2 - transform.x - 260) / transform.scale,
+			(window.innerHeight / 2 - transform.y - 350) / transform.scale,
 		);
 		if (node) setNodes((prev) => [...prev, node]);
 	}, [transform]);
@@ -648,6 +658,7 @@ function App() {
 				onAddDesignPromptNode={addDesignPromptNode}
 				onAddBrandDesignNode={addBrandDesignNode}
 				onAddDataViewerNode={addDataViewerNode}
+				onAddCodeGenerationNode={addCodeGenerationNode}
 				onOpenSettings={() => setShowSettingsModal(true)}
 				onOpenSave={() => setShowSaveModal(true)}
 				onOpenLoad={() => setShowLoadModal(true)}
@@ -724,6 +735,7 @@ function App() {
 					getIncomingDesignPromptData={getIncomingDesignPromptData}
 					getIncomingBrandDesignData={getIncomingBrandDesignData}
 					getIncomingStructuredData={getIncomingStructuredData}
+					getIncomingCodeGenerationData={getIncomingCodeGenerationData}
 					getPortConnections={getPortConnections}
 					getInputPortConnections={getInputPortConnections}
 				/>

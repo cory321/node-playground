@@ -238,6 +238,14 @@ export interface SEOOptimizedPackage {
 	stats: SEOPackageStats;
 
 	generatedAt: string;
+
+	// Pass-through source data for downstream nodes (e.g., Code Generation)
+	// This allows nodes that consume SEO package to access the original content
+	// without requiring separate connections to Editorial/Comparison nodes
+	sourceData?: {
+		editorialContent: GeneratedEditorialContent | null;
+		comparisonData: GeneratedComparisonData | null;
+	};
 }
 
 // ============================================================================

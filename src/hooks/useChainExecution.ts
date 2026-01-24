@@ -19,6 +19,9 @@ import {
 	isEditorialContentGeneratorNode,
 	isComparisonDataNode,
 	isDesignPromptNode,
+	isSEOOptimizationNode,
+	isBrandDesignNode,
+	isProviderProfileGeneratorNode,
 	DemographicsData,
 } from '@/types/nodes';
 import { EnrichedProvider } from '@/types/enrichedProvider';
@@ -26,6 +29,9 @@ import { LocalKnowledgeOutput } from '@/types/localKnowledge';
 import { SitePlannerOutput } from '@/types/sitePlanner';
 import { GeneratedEditorialContent } from '@/types/editorialContent';
 import { GeneratedComparisonData } from '@/types/comparisonPage';
+import { SEOOptimizedPackage } from '@/types/seoPackage';
+import { BrandDesignOutput } from '@/types/brandDesign';
+import { GeneratedProviderProfile } from '@/types/generatedProfile';
 import { Connection } from '@/types/connections';
 import { callLLM } from '@/api/llm';
 import { getLeadEconomics } from '@/api/serp/tiers';
@@ -945,6 +951,71 @@ export function useChainExecution({
 		[nodes, connections]
 	);
 
+	// Get incoming data for Code Generation node
+	// Uses 4 input ports (editorial/comparison come through SEO package's sourceData):
+	// - sitePlan (required): SitePlannerNode output
+	// - seoPackage (required): SEOOptimizationNode output (includes editorial/comparison in sourceData)
+	// - brandDesign (required): BrandDesignNode output
+	// - profiles (optional): ProviderProfileGeneratorNode output
+	const getIncomingCodeGenerationData = useCallback(
+		(nodeId: string): {
+			sitePlan: SitePlannerOutput | null;
+			seoPackage: SEOOptimizedPackage | null;
+			brandDesign: BrandDesignOutput | null;
+			providerProfiles: GeneratedProviderProfile[];
+		} | null => {
+			const incomingConnections = connections.filter((c) => c.toId === nodeId);
+
+			const result: {
+				sitePlan: SitePlannerOutput | null;
+				seoPackage: SEOOptimizedPackage | null;
+				brandDesign: BrandDesignOutput | null;
+				providerProfiles: GeneratedProviderProfile[];
+			} = {
+				sitePlan: null,
+				seoPackage: null,
+				brandDesign: null,
+				providerProfiles: [],
+			};
+
+			for (const conn of incomingConnections) {
+				const upstreamNode = nodes.find((n) => n.id === conn.fromId);
+				if (!upstreamNode) continue;
+
+				const targetPort = conn.toPort;
+
+				// Site Plan port - comes from Site Planner node
+				if (targetPort === 'sitePlan' && isSitePlannerNode(upstreamNode) && upstreamNode.output) {
+					result.sitePlan = upstreamNode.output as SitePlannerOutput;
+				}
+
+				// SEO Package port - comes from SEO Optimization node
+				// Note: editorial/comparison data are accessed via seoPackage.sourceData
+				if (targetPort === 'seoPackage' && isSEOOptimizationNode(upstreamNode) && upstreamNode.output) {
+					result.seoPackage = upstreamNode.output as SEOOptimizedPackage;
+				}
+
+				// Brand Design port - comes from Brand Design node
+				if (targetPort === 'brandDesign' && isBrandDesignNode(upstreamNode) && upstreamNode.output) {
+					result.brandDesign = upstreamNode.output as BrandDesignOutput;
+				}
+
+				// Profiles port - comes from Provider Profile Generator node
+				if (targetPort === 'profiles' && isProviderProfileGeneratorNode(upstreamNode) && upstreamNode.output) {
+					result.providerProfiles = upstreamNode.output as GeneratedProviderProfile[];
+				}
+			}
+
+			// Return null if we don't have the required inputs
+			if (!result.sitePlan || !result.seoPackage || !result.brandDesign) {
+				return null;
+			}
+
+			return result;
+		},
+		[nodes, connections]
+	);
+
 	// Propagate data to downstream output nodes
 	const propagateToOutputNodes = useCallback(
 		(sourceNodeId: string, responseData: string) => {
@@ -1046,6 +1117,7 @@ export function useChainExecution({
 		getIncomingDesignPromptData,
 		getIncomingBrandDesignData,
 		getIncomingStructuredData,
+		getIncomingCodeGenerationData,
 		getDownstreamNodes,
 		getUpstreamNodes,
 	};

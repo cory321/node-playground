@@ -24,12 +24,11 @@ import {
   isImageSourceNode,
   isBrandDesignNode,
   isDataViewerNode,
+  isCodeGenerationNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { EnrichedProvider } from '@/types/enrichedProvider';
 import { LocalKnowledgeOutput } from '@/types/localKnowledge';
-import { GeneratedEditorialContent } from '@/types/editorialContent';
-import { GeneratedComparisonData } from '@/types/comparisonPage';
 import { LLMNode } from '../nodes/LLMNode';
 import { OutputNode } from '../nodes/OutputNode';
 import { LocationNode } from '../nodes/LocationNode';
@@ -49,7 +48,11 @@ import { DesignPromptNode } from '../nodes/DesignPromptNode';
 import { ImageSourceNode } from '../nodes/ImageSourceNode';
 import { BrandDesignNode } from '../nodes/BrandDesignNode';
 import { DataViewerNode } from '../nodes/DataViewerNode';
+import { CodeGenerationNode } from '../nodes/CodeGenerationNode';
 import { SitePlannerOutput } from '@/types/sitePlanner';
+import { SEOOptimizedPackage } from '@/types/seoPackage';
+import { BrandDesignOutput } from '@/types/brandDesign';
+import { GeneratedProviderProfile } from '@/types/generatedProfile';
 
 interface NodeRendererProps {
   nodes: NodeData[];
@@ -156,6 +159,13 @@ interface NodeRendererProps {
     sourceNodeType: string;
     sourceNodeTitle: string;
   } | null;
+  // Note: editorialContent and comparisonData are now passed through SEO package's sourceData
+  getIncomingCodeGenerationData?: (nodeId: string) => {
+    sitePlan: SitePlannerOutput | null;
+    seoPackage: SEOOptimizedPackage | null;
+    brandDesign: BrandDesignOutput | null;
+    providerProfiles: GeneratedProviderProfile[];
+  } | null;
   getPortConnections: (nodeId: string, portId: string) => Connection[];
   getInputPortConnections: (nodeId: string, portId: string) => Connection[];
 }
@@ -197,6 +207,7 @@ export function NodeRenderer({
   getIncomingDesignPromptData,
   getIncomingBrandDesignData,
   getIncomingStructuredData,
+  getIncomingCodeGenerationData,
   getPortConnections,
   getInputPortConnections,
 }: NodeRendererProps) {
@@ -679,6 +690,32 @@ export function NodeRenderer({
               onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
               onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
               incomingData={getIncomingStructuredData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isCodeGenerationNode(node)) {
+          return (
+            <CodeGenerationNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e, portId) => onInputPortMouseDownWithPort(e, node.id, portId)}
+              onInputPortMouseUp={(portId) => onInputPortMouseUpWithPort(node.id, portId)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
+              incomingData={getIncomingCodeGenerationData?.(node.id) ?? null}
             />
           );
         }

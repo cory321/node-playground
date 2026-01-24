@@ -42,6 +42,7 @@ import {
 	ImageSourceNodeData,
 	BrandDesignNodeData,
 	DataViewerNodeData,
+	CodeGenerationNodeData,
 	NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -779,6 +780,56 @@ registry.set('data-viewer', {
 		displayValue: null,
 		sourceNodeType: null,
 		lastUpdated: null,
+	}),
+});
+
+// Register Code Generation node type
+// Final pipeline node: transforms all upstream outputs into deployable Next.js codebase
+registry.set('code-generation', {
+	type: 'code-generation',
+	label: 'Code Generation',
+	icon: Code2,
+	color: NODE_DEFAULTS['code-generation'].color,
+	defaultWidth: NODE_DEFAULTS['code-generation'].width,
+	defaultHeight: NODE_DEFAULTS['code-generation'].height,
+	hasInputPort: false, // Uses custom multi-input ports
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): CodeGenerationNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['code-generation'].width,
+		height: NODE_DEFAULTS['code-generation'].height,
+		title: 'Code Generation',
+		color: NODE_DEFAULTS['code-generation'].color,
+		type: 'code-generation',
+		status: 'idle',
+		error: null,
+		inputHasSitePlan: false,
+		inputHasSEO: false,
+		inputHasBrandDesign: false,
+		inputHasEditorial: false,
+		inputHasProfiles: false,
+		inputHasComparison: false,
+		inputCity: null,
+		inputState: null,
+		inputCategory: null,
+		inputPageCount: 0,
+		outputFormat: 'files',
+		includeReadme: true,
+		progress: {
+			phase: 'preparing',
+			currentFile: null,
+			filesGenerated: 0,
+			totalFiles: 0,
+			bytesGenerated: 0,
+		},
+		output: null,
+		lastGeneratedAt: null,
 	}),
 });
 
