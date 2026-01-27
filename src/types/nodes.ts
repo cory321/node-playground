@@ -325,6 +325,13 @@ export interface ProviderEnrichmentNodeData extends BaseNodeData {
 export type AspectRatioPreset = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type AspectRatioMode = 'preset' | 'custom';
 
+// Batch generated image for image generation node
+export interface BatchGeneratedImage {
+	dataUrl: string; // Base64 data URL
+	publicUrl: string | null; // Supabase storage URL (for linking)
+	index: number; // Position in batch (0-3)
+}
+
 // Image Generation Node specific data
 export interface ImageGenNodeData extends BaseNodeData {
 	type: 'image-gen';
@@ -332,12 +339,16 @@ export interface ImageGenNodeData extends BaseNodeData {
 	error: string | null;
 	// Prompt (local input, can be overridden by upstream)
 	prompt: string;
+	// Batch configuration (1-4 images in parallel)
+	batchCount: number;
 	// Aspect ratio configuration
 	aspectRatioMode: AspectRatioMode;
 	aspectRatio: AspectRatioPreset; // For preset mode
 	customWidth: number | null; // For custom mode (e.g. 1440)
 	customHeight: number | null; // For custom mode (e.g. 4500)
-	// Generated output
+	// Generated output (batch)
+	generatedImages: BatchGeneratedImage[]; // Array of generated images
+	// Legacy single image support (for backward compatibility)
 	generatedImage: string | null; // Base64 data URL
 	publicUrl: string | null; // Supabase storage URL (for linking)
 	// Timestamps

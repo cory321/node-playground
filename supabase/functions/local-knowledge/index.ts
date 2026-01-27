@@ -187,34 +187,50 @@ function calculateConfidence(data: Partial<LocalKnowledgeOutput>): number {
 
 /**
  * Parse Claude response and extract JSON
+ * When web search is enabled, Claude may return multiple content blocks
+ * We need to check all text blocks to find the one with the JSON response
  */
 function parseClaudeResponse(response: ClaudeResponse): Partial<LocalKnowledgeOutput> | null {
-	// Find text content block
-	const textBlock = response.content?.find((block) => block.type === "text");
-	if (!textBlock?.text) {
+	// Get all text content blocks (there may be multiple when web search is used)
+	const textBlocks = response.content?.filter((block) => block.type === "text") || [];
+	
+	if (textBlocks.length === 0) {
 		console.error("No text content in Claude response");
 		return null;
 	}
 
-	const text = textBlock.text.trim();
+	// Try each text block, starting from the last one (most likely to contain final JSON)
+	for (let i = textBlocks.length - 1; i >= 0; i--) {
+		const text = textBlocks[i].text?.trim();
+		if (!text) continue;
 
-	// Try to extract JSON from the response
-	// First try to parse the whole response as JSON
-	try {
-		return JSON.parse(text);
-	} catch {
-		// Try to find JSON in the response (in case there's extra text)
-		const jsonMatch = text.match(/\{[\s\S]*\}/);
-		if (jsonMatch) {
-			try {
-				return JSON.parse(jsonMatch[0]);
-			} catch (e) {
-				console.error("Failed to parse extracted JSON:", e);
+		// Try to parse the whole response as JSON
+		try {
+			const parsed = JSON.parse(text);
+			// Verify it has the expected structure
+			if (parsed.contentHooks || parsed.marketContext || parsed.regionalIdentity) {
+				return parsed;
+			}
+		} catch {
+			// Try to find JSON in the response (in case there's extra text)
+			const jsonMatch = text.match(/\{[\s\S]*\}/);
+			if (jsonMatch) {
+				try {
+					const parsed = JSON.parse(jsonMatch[0]);
+					// Verify it has the expected structure
+					if (parsed.contentHooks || parsed.marketContext || parsed.regionalIdentity) {
+						return parsed;
+					}
+				} catch (e) {
+					// Continue to next block
+					console.log(`Failed to parse JSON from text block ${i}:`, e);
+				}
 			}
 		}
 	}
 
-	console.error("Could not parse JSON from Claude response");
+	console.error("Could not parse JSON from any Claude response text blocks");
+	console.log("Response content types:", response.content?.map(b => b.type).join(", "));
 	return null;
 }
 

@@ -377,7 +377,8 @@ REQUIREMENTS:
 IMPORT RULES:
 - Use Image from 'next/image' for all images
 - Use Link from 'next/link' for all navigation links
-- Use icons from 'lucide-react' for icon components (e.g., ShieldCheck, Star, Phone, MapPin)
+- Use ONLY real Lucide icon names from 'lucide-react' (e.g., ShieldCheck, Star, Phone, MapPin, Fingerprint, Award)
+- NEVER use generic names like "Icon", "IconComponent", or made-up icon names
 - CRITICAL: Never import { Link } or { Image } from 'lucide-react' - they conflict with Next.js!
   - If you need a link icon, use { Link2 } or { ExternalLink } from 'lucide-react'
   - If you need an image/picture icon, use { ImageIcon } from 'lucide-react'
@@ -481,17 +482,21 @@ function buildTokensCss(designTokens: ReplicatorDesignTokens): string {
 
 /**
  * Components that should NOT be detected as Lucide icons
- * These are either Next.js components or React built-ins
+ * These are either Next.js components, React built-ins, or common false positives
  */
 const NON_LUCIDE_COMPONENTS = new Set([
 	// Next.js components
 	'Image', 'Link', 'Script', 'Head',
 	// Common React patterns
-	'Fragment', 'Suspense', 'StrictMode',
+	'Fragment', 'Suspense', 'StrictMode', 'Component', 'PureComponent',
 	// HTML elements that might be capitalized in error
 	'Button', 'Input', 'Form', 'Select', 'Option', 'Table', 'Div', 'Span',
 	// Custom component patterns we generate
 	'Section', 'Page', 'Layout', 'Header', 'Footer', 'Nav', 'Main',
+	// Common false positives - generic component names Claude might generate
+	'Icon', 'IconComponent', 'IconWrapper', 'IconContainer',
+	'Card', 'CardIcon', 'ServiceCard', 'FeatureCard', 'TestimonialCard',
+	'Container', 'Wrapper', 'Provider', 'Context',
 ]);
 
 /**

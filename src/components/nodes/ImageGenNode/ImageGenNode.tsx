@@ -10,11 +10,13 @@ import {
 	Settings2,
 	ExternalLink,
 	Check,
+	LayoutGrid,
 } from 'lucide-react';
 import {
 	ImageGenNodeData,
 	HoveredPort,
 	AspectRatioPreset,
+	BatchGeneratedImage,
 } from '@/types/nodes';
 import { BaseNode } from '../base';
 import {
@@ -24,6 +26,9 @@ import {
 	ASPECT_RATIO_PRESETS,
 } from '@/api/llm';
 import { useImageLibrary } from '@/contexts';
+
+// Batch count options
+const BATCH_OPTIONS = [1, 2, 3, 4] as const;
 
 interface ImageGenNodeProps {
 	node: ImageGenNodeData;
@@ -69,9 +74,18 @@ export function ImageGenNode({
 	const [showImage, setShowImage] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 	const [savedToLibrary, setSavedToLibrary] = useState(false);
+	const [generationProgress, setGenerationProgress] = useState<{
+		completed: number;
+		total: number;
+	} | null>(null);
 	const isLoading = node.status === 'loading';
 	const hasError = node.status === 'error';
-	const hasImage = node.status === 'success' && node.generatedImage;
+	// Check for batch images first, then legacy single image
+	const hasImages =
+		node.status === 'success' &&
+		((node.generatedImages && node.generatedImages.length > 0) ||
+			node.generatedImage);
+	const batchCount = node.batchCount || 1;
 
 	// Image library for auto-saving
 	const { addImage, hasStorage } = useImageLibrary();
@@ -117,7 +131,7 @@ export function ImageGenNode({
 		node.customHeight &&
 		getDisplayAspectRatio() !== getApiAspectRatio();
 
-	// Handle image generation
+	// Handle image generation (supports batch generation up to 4 in parallel)
 	const handleGenerate = useCallback(async () => {
 		// Determine the prompt to use
 		const effectivePrompt = incomingData || node.prompt;
@@ -131,36 +145,82 @@ export function ImageGenNode({
 			return;
 		}
 
-		updateNode(node.id, { status: 'loading', error: null });
+		const count = node.batchCount || 1;
+		updateNode(node.id, {
+			status: 'loading',
+			error: null,
+			generatedImages: [],
+			generatedImage: null,
+		});
 		setSavedToLibrary(false);
+		setGenerationProgress({ completed: 0, total: count });
 
 		try {
-			// Use the API-compatible aspect ratio
 			const aspectRatio = getApiAspectRatio();
-			const imageDataUrl = await callGeminiImage(effectivePrompt, aspectRatio);
 
-			// Auto-save to image library if storage is available
-			let publicUrl: string | null = null;
-			if (hasStorage) {
-				const saved = await addImage(
-					imageDataUrl,
-					effectivePrompt,
-					aspectRatio,
-					node.id,
-				);
-				if (saved) {
-					publicUrl = saved.public_url;
-					setSavedToLibrary(true);
-					// Reset the saved indicator after 3 seconds
-					setTimeout(() => setSavedToLibrary(false), 3000);
+			// Generate images in parallel (up to 4)
+			const generationPromises = Array.from({ length: count }, async (_, index) => {
+				try {
+					const imageDataUrl = await callGeminiImage(effectivePrompt, aspectRatio);
+
+					// Update progress
+					setGenerationProgress((prev) =>
+						prev ? { ...prev, completed: prev.completed + 1 } : null
+					);
+
+					// Auto-save to image library if storage is available
+					let publicUrl: string | null = null;
+					if (hasStorage) {
+						const saved = await addImage(
+							imageDataUrl,
+							effectivePrompt,
+							aspectRatio,
+							`${node.id}-${index}`,
+						);
+						if (saved) {
+							publicUrl = saved.public_url;
+						}
+					}
+
+					return {
+						dataUrl: imageDataUrl,
+						publicUrl,
+						index,
+					} as BatchGeneratedImage;
+				} catch (error) {
+					console.error(`Failed to generate image ${index + 1}:`, error);
+					return null;
 				}
+			});
+
+			const results = await Promise.all(generationPromises);
+			const successfulImages = results.filter(
+				(img): img is BatchGeneratedImage => img !== null
+			);
+
+			if (successfulImages.length === 0) {
+				throw new Error('All image generations failed');
+			}
+
+			// Sort by index to maintain order
+			successfulImages.sort((a, b) => a.index - b.index);
+
+			const savedAny = successfulImages.some((img) => img.publicUrl);
+			if (savedAny) {
+				setSavedToLibrary(true);
+				setTimeout(() => setSavedToLibrary(false), 3000);
 			}
 
 			updateNode(node.id, {
 				status: 'success',
-				generatedImage: imageDataUrl,
-				publicUrl,
-				error: null,
+				generatedImages: successfulImages,
+				// Keep legacy field populated with first image for backward compatibility
+				generatedImage: successfulImages[0]?.dataUrl || null,
+				publicUrl: successfulImages[0]?.publicUrl || null,
+				error:
+					successfulImages.length < count
+						? `${count - successfulImages.length} image(s) failed`
+						: null,
 				lastGeneratedAt: Date.now(),
 			});
 		} catch (error) {
@@ -169,12 +229,16 @@ export function ImageGenNode({
 			updateNode(node.id, {
 				status: 'error',
 				error: errorMessage,
+				generatedImages: [],
 				generatedImage: null,
 			});
+		} finally {
+			setGenerationProgress(null);
 		}
 	}, [
 		node.id,
 		node.prompt,
+		node.batchCount,
 		incomingData,
 		getApiAspectRatio,
 		updateNode,
@@ -193,7 +257,9 @@ export function ImageGenNode({
 					/>
 				</div>
 				<span className="text-[10px] uppercase tracking-[0.2em] text-cyan-300 font-mono">
-					Generating...
+					{generationProgress && generationProgress.total > 1
+						? `Generating ${generationProgress.completed}/${generationProgress.total}...`
+						: 'Generating...'}
 				</span>
 			</div>
 		</div>
@@ -248,6 +314,28 @@ export function ImageGenNode({
 				>
 					<Settings2 size={14} />
 				</button>
+
+				{/* Batch Count Selector */}
+				<div
+					className="flex items-center gap-1 bg-slate-950/60 border border-slate-700/50 rounded-lg px-2 py-1.5"
+					title="Number of images to generate in parallel"
+				>
+					<LayoutGrid size={12} className="text-slate-500" />
+					<select
+						value={batchCount}
+						onChange={(e) =>
+							updateNode(node.id, { batchCount: parseInt(e.target.value) })
+						}
+						disabled={isLoading}
+						className="bg-transparent text-xs text-cyan-300 font-mono focus:outline-none cursor-pointer disabled:opacity-50"
+					>
+						{BATCH_OPTIONS.map((count) => (
+							<option key={count} value={count} className="bg-slate-900">
+								{count}×
+							</option>
+						))}
+					</select>
+				</div>
 
 				{/* Aspect Ratio Display */}
 				<div className="flex-1 bg-slate-950/60 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-slate-400">
@@ -430,7 +518,7 @@ export function ImageGenNode({
 			)}
 
 			{/* Image Preview */}
-			{hasImage && (
+			{hasImages && (
 				<div className="flex flex-col gap-2">
 					<div className="flex items-center gap-2">
 						<button
@@ -439,16 +527,11 @@ export function ImageGenNode({
 						>
 							{showImage ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
 							Generated Image
-						</button>
-						<button
-							onClick={() =>
-								window.open(node.publicUrl || node.generatedImage!, '_blank')
-							}
-							className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-slate-500 hover:text-cyan-400 transition-colors"
-							title="Open full size in new tab"
-						>
-							<ExternalLink size={10} />
-							Full Size
+							{node.generatedImages && node.generatedImages.length > 1 && (
+								<span className="text-slate-500">
+									({node.generatedImages.length})
+								</span>
+							)}
 						</button>
 						{savedToLibrary && (
 							<span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-400">
@@ -457,40 +540,115 @@ export function ImageGenNode({
 							</span>
 						)}
 					</div>
+
+					{/* Expanded Grid View */}
 					{showImage && (
 						<div
-							className="bg-slate-950/60 border border-emerald-500/20 rounded-lg p-2 overflow-hidden cursor-pointer group relative"
-							onClick={() =>
-								window.open(node.publicUrl || node.generatedImage!, '_blank')
-							}
-							title="Click to open full size"
+							className={`grid gap-2 ${
+								node.generatedImages && node.generatedImages.length > 1
+									? node.generatedImages.length === 2
+										? 'grid-cols-2'
+										: 'grid-cols-2'
+									: 'grid-cols-1'
+							}`}
 						>
-							<img
-								src={node.generatedImage!}
-								alt="Generated"
-								className="w-full h-auto rounded-lg object-contain max-h-48 group-hover:opacity-90 transition-opacity"
-							/>
-							<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
-								<ExternalLink size={24} className="text-white" />
-							</div>
+							{node.generatedImages && node.generatedImages.length > 0 ? (
+								node.generatedImages.map((img, idx) => (
+									<div
+										key={idx}
+										className="bg-slate-950/60 border border-emerald-500/20 rounded-lg p-2 overflow-hidden cursor-pointer group relative"
+										onClick={() =>
+											window.open(img.publicUrl || img.dataUrl, '_blank')
+										}
+										title="Click to open full size"
+									>
+										<img
+											src={img.dataUrl}
+											alt={`Generated ${idx + 1}`}
+											className="w-full h-auto rounded-lg object-contain max-h-32 group-hover:opacity-90 transition-opacity"
+										/>
+										<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
+											<ExternalLink size={16} className="text-white" />
+										</div>
+										{node.generatedImages.length > 1 && (
+											<div className="absolute top-3 left-3 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+												{idx + 1}
+											</div>
+										)}
+									</div>
+								))
+							) : (
+								// Fallback for legacy single image
+								<div
+									className="bg-slate-950/60 border border-emerald-500/20 rounded-lg p-2 overflow-hidden cursor-pointer group relative"
+									onClick={() =>
+										window.open(
+											node.publicUrl || node.generatedImage!,
+											'_blank'
+										)
+									}
+									title="Click to open full size"
+								>
+									<img
+										src={node.generatedImage!}
+										alt="Generated"
+										className="w-full h-auto rounded-lg object-contain max-h-48 group-hover:opacity-90 transition-opacity"
+									/>
+									<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
+										<ExternalLink size={24} className="text-white" />
+									</div>
+								</div>
+							)}
 						</div>
 					)}
-					{!showImage && node.generatedImage && (
-						<div
-							className="h-12 w-12 rounded-lg overflow-hidden border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 transition-colors group relative"
-							onClick={() =>
-								window.open(node.publicUrl || node.generatedImage!, '_blank')
-							}
-							title="Click to open full size"
-						>
-							<img
-								src={node.generatedImage}
-								alt="Generated thumbnail"
-								className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-							/>
-							<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-								<ExternalLink size={12} className="text-white" />
-							</div>
+
+					{/* Collapsed Thumbnail View */}
+					{!showImage && (
+						<div className="flex gap-2">
+							{node.generatedImages && node.generatedImages.length > 0 ? (
+								node.generatedImages.map((img, idx) => (
+									<div
+										key={idx}
+										className="h-12 w-12 rounded-lg overflow-hidden border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 transition-colors group relative"
+										onClick={() =>
+											window.open(img.publicUrl || img.dataUrl, '_blank')
+										}
+										title="Click to open full size"
+									>
+										<img
+											src={img.dataUrl}
+											alt={`Generated ${idx + 1} thumbnail`}
+											className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+										/>
+										<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+											<ExternalLink size={10} className="text-white" />
+										</div>
+									</div>
+								))
+							) : (
+								// Fallback for legacy single image
+								node.generatedImage && (
+									<div
+										className="h-12 w-12 rounded-lg overflow-hidden border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 transition-colors group relative"
+										onClick={() =>
+											window.open(
+												node.publicUrl || node.generatedImage!,
+												'_blank'
+											)
+										}
+										title="Click to open full size"
+									>
+										<img
+											src={node.generatedImage}
+											alt="Generated thumbnail"
+											className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+										/>
+										<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+											<ExternalLink size={12} className="text-white" />
+										</div>
+									</div>
+								)
+							)}
 						</div>
 					)}
 				</div>
