@@ -20,6 +20,7 @@ export const NODE_TYPES = {
 	BRAND_DESIGN: 'brand-design',
 	DATA_VIEWER: 'data-viewer',
 	CODE_GENERATION: 'code-generation',
+	SCREENSHOT_REPLICATOR: 'screenshot-replicator',
 } as const;
 
 export type NodeType = (typeof NODE_TYPES)[keyof typeof NODE_TYPES];
@@ -684,11 +685,59 @@ export interface CodeGenerationNodeData extends BaseNodeData {
 	// Configuration
 	outputFormat: CodeOutputFormat;
 	includeReadme: boolean;
+	/** Use LLM for page generation (Opus for homepage, Haiku for others) */
+	useLLM: boolean;
+	/** Generate images using Gemini Imagen 3 */
+	generateImages: boolean;
 	// Progress tracking
 	progress: CodeGenerationProgress;
 	// Generated output (GeneratedCodebase from codeGeneration.ts)
 	output: unknown | null; // Use unknown to avoid circular import
 	// Timestamps
+	lastGeneratedAt: number | null;
+}
+
+// Screenshot Replicator progress tracking
+export type ScreenshotReplicatorPhase =
+	| 'idle'
+	| 'analyzing'
+	| 'generating-assets'
+	| 'generating-code'
+	| 'assembling'
+	| 'complete';
+
+export interface ScreenshotReplicatorProgress {
+	phase: ScreenshotReplicatorPhase;
+	currentPass?: string;
+	passesComplete: number;
+	totalPasses: number;
+	currentAsset?: string;
+	assetsGenerated: number;
+	totalAssets: number;
+	currentSection?: string;
+	sectionsGenerated: number;
+	totalSections: number;
+	currentFile?: string;
+	filesGenerated: number;
+	bytesGenerated: number;
+}
+
+// Screenshot Replicator Node specific data
+// Analyzes a screenshot and replicates it as React/Tailwind code
+export interface ScreenshotReplicatorNodeData extends BaseNodeData {
+	type: 'screenshot-replicator';
+	status: NodeStatus;
+	error: string | null;
+	// Input from upstream ImageSourceNode or ImageGenNode
+	inputScreenshotUrl: string | null;
+	// Analysis results (ScreenshotAnalysis from screenshotReplicator.ts)
+	analysis: unknown | null; // Use unknown to avoid circular import
+	// Progress tracking
+	progress: ScreenshotReplicatorProgress;
+	// Generated output (ReplicatorOutput from screenshotReplicator.ts)
+	output: unknown | null; // Use unknown to avoid circular import
+	// Timestamps
+	lastAnalyzedAt: number | null;
 	lastGeneratedAt: number | null;
 }
 
@@ -713,7 +762,8 @@ export type NodeData =
 	| ImageSourceNodeData
 	| BrandDesignNodeData
 	| DataViewerNodeData
-	| CodeGenerationNodeData;
+	| CodeGenerationNodeData
+	| ScreenshotReplicatorNodeData;
 
 // Type guards for narrowing node types
 export function isLLMNode(node: NodeData): node is LLMNodeData {
@@ -814,6 +864,12 @@ export function isCodeGenerationNode(
 	node: NodeData,
 ): node is CodeGenerationNodeData {
 	return node.type === 'code-generation';
+}
+
+export function isScreenshotReplicatorNode(
+	node: NodeData,
+): node is ScreenshotReplicatorNodeData {
+	return node.type === 'screenshot-replicator';
 }
 
 // Default node dimensions
@@ -917,6 +973,11 @@ export const NODE_DEFAULTS = {
 		width: 520,
 		height: 700,
 		color: '#059669', // Emerald - representing code/generation
+	},
+	'screenshot-replicator': {
+		width: 480,
+		height: 650,
+		color: '#7c3aed', // Violet - representing visual replication
 	},
 } as const;
 

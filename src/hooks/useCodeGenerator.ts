@@ -12,8 +12,14 @@ interface UseCodeGeneratorProps {
 	updateNode: (id: string, updates: Partial<CodeGenerationNodeData>) => void;
 }
 
+interface GenerationOptions {
+	includeReadme?: boolean;
+	useLLM?: boolean;
+	generateImages?: boolean;
+}
+
 interface UseCodeGeneratorReturn {
-	runGeneration: (inputs: CodeGenInputs) => Promise<void>;
+	runGeneration: (inputs: CodeGenInputs, options?: GenerationOptions) => Promise<void>;
 	stopGeneration: () => void;
 	isGenerating: boolean;
 }
@@ -26,7 +32,7 @@ export function useCodeGenerator({
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	const runGeneration = useCallback(
-		async (inputs: CodeGenInputs) => {
+		async (inputs: CodeGenInputs, options: GenerationOptions = {}) => {
 			if (isGenerating) return;
 
 			// Create abort controller
@@ -49,10 +55,13 @@ export function useCodeGenerator({
 					updateNode(nodeId, { progress });
 				};
 
-				// Generate the codebase
+				// Generate the codebase with options
 				const output = await generateNextjsSite(inputs, {
 					onProgress,
 					abortSignal: abortControllerRef.current.signal,
+					includeReadme: options.includeReadme ?? true,
+					useLLM: options.useLLM ?? false,
+					generateImages: options.generateImages ?? false,
 				});
 
 				// Check if aborted

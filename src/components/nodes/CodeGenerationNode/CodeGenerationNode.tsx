@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import JSZip from 'jszip';
 import {
 	Code2,
 	Play,
@@ -9,6 +10,8 @@ import {
 	FileCheck,
 	FolderOpen,
 	Eye,
+	Sparkles,
+	ImageIcon,
 } from 'lucide-react';
 import { CodeGenerationNodeData, HoveredPort } from '@/types/nodes';
 import { Connection } from '@/types/connections';
@@ -164,25 +167,67 @@ export function CodeGenerationNode({
 			comparisonData,
 		};
 
-		runGeneration(inputs);
+		// Pass generation options
+		runGeneration(inputs, {
+			includeReadme: node.includeReadme,
+			useLLM: node.useLLM ?? false,
+			generateImages: node.generateImages ?? false,
+		});
 	};
 
-	// Handle download
+	// Download state for async ZIP generation
+	const [isDownloading, setIsDownloading] = useState(false);
+
+	// Handle download - creates a ZIP file with all generated files and images
 	const handleDownload = async () => {
 		if (!output) return;
 
-		// Create a zip file or download files
-		const blob = new Blob([JSON.stringify(output, null, 2)], {
-			type: 'application/json',
-		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'generated-site.json';
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
+		setIsDownloading(true);
+
+		try {
+			const zip = new JSZip();
+
+			// Add all generated code files
+			for (const file of output.files) {
+				zip.file(file.path, file.content);
+			}
+
+			// Add all generated images (if any)
+			if (output.images && output.images.length > 0) {
+				for (const img of output.images) {
+					// Convert base64 to binary
+					const binaryData = atob(img.data);
+					const bytes = new Uint8Array(binaryData.length);
+					for (let i = 0; i < binaryData.length; i++) {
+						bytes[i] = binaryData.charCodeAt(i);
+					}
+					zip.file(img.path, bytes, { binary: true });
+				}
+			}
+
+			// Generate the ZIP file
+			const blob = await zip.generateAsync({ 
+				type: 'blob',
+				compression: 'DEFLATE',
+				compressionOptions: { level: 6 }
+			});
+
+			// Create download link
+			const brandName = output.metadata.sitePlan.brandName || 'generated-site';
+			const safeName = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${safeName}.zip`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error('Failed to create ZIP:', error);
+		} finally {
+			setIsDownloading(false);
+		}
 	};
 
 	const isLoading = node.status === 'loading';
@@ -414,16 +459,39 @@ export function CodeGenerationNode({
 				)}
 
 				{/* Options */}
-				<div className="flex gap-2">
-					<label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-						<input
-							type="checkbox"
-							checked={node.includeReadme}
-							onChange={(e) => updateNode(node.id, { includeReadme: e.target.checked })}
-							className="rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30"
-						/>
-						Include README
-					</label>
+				<div className="flex flex-col gap-2 p-2 bg-slate-800/30 rounded-lg">
+					<div className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">Generation Options</div>
+					<div className="flex flex-wrap gap-x-4 gap-y-2">
+						<label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={node.includeReadme}
+								onChange={(e) => updateNode(node.id, { includeReadme: e.target.checked })}
+								className="rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500/30 w-3 h-3"
+							/>
+							README
+						</label>
+						<label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="Use Claude Opus 4.5 for homepage, Haiku for other pages">
+							<input
+								type="checkbox"
+								checked={node.useLLM ?? false}
+								onChange={(e) => updateNode(node.id, { useLLM: e.target.checked })}
+								className="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500/30 w-3 h-3"
+							/>
+							<Sparkles size={10} className="text-indigo-400" />
+							LLM Pages
+						</label>
+						<label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="Generate images using Gemini Imagen 3">
+							<input
+								type="checkbox"
+								checked={node.generateImages ?? false}
+								onChange={(e) => updateNode(node.id, { generateImages: e.target.checked })}
+								className="rounded border-slate-600 bg-slate-800 text-violet-500 focus:ring-violet-500/30 w-3 h-3"
+							/>
+							<ImageIcon size={10} className="text-violet-400" />
+							Images
+						</label>
+					</div>
 				</div>
 
 				{/* Run Button */}
@@ -443,10 +511,19 @@ export function CodeGenerationNode({
 					{hasResults && (
 						<button
 							onClick={handleDownload}
-							title="Download"
-							className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-all bg-slate-700 hover:bg-slate-600 text-slate-300"
+							disabled={isDownloading}
+							title="Download as ZIP"
+							className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-all ${
+								isDownloading
+									? 'bg-slate-800 text-slate-500 cursor-wait'
+									: 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+							}`}
 						>
-							<Download size={14} />
+							{isDownloading ? (
+								<div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+							) : (
+								<Download size={14} />
+							)}
 						</button>
 					)}
 				</div>
@@ -468,6 +545,12 @@ export function CodeGenerationNode({
 								<FileCheck size={12} />
 								{output.files.length} files
 							</div>
+							{output.images && output.images.length > 0 && (
+								<div className="flex items-center gap-1.5 text-violet-400">
+									<ImageIcon size={12} />
+									{output.images.length} images
+								</div>
+							)}
 							<div className="text-slate-400">
 								{formatBytes(output.metadata.totalBytes)}
 							</div>

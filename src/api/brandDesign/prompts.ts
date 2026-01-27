@@ -208,6 +208,69 @@ Guidelines:
 Return ONLY the JSON object, no additional text.`;
 
 /**
+ * Pass 4: Visual Assets (Photography, Graphics, Icons)
+ * Captures photography style, graphics/illustration style, and icon characteristics
+ */
+export const VISUAL_ASSETS_PROMPT = `Analyze this website screenshot and extract detailed information about the visual assets: photography style, graphics/illustrations, and icons.
+
+Return a JSON object with this exact structure:
+{
+  "photography": {
+    "lighting": ["..."],
+    "composition": ["..."],
+    "mood": "...",
+    "colorGrading": "...",
+    "subjectMatter": ["..."],
+    "depthOfField": "...",
+    "description": "..."
+  },
+  "graphics": {
+    "illustrationStyle": "...",
+    "patterns": ["..."],
+    "decorativeElements": ["..."],
+    "mood": "...",
+    "colorUsage": "...",
+    "description": "..."
+  },
+  "icons": {
+    "style": "outline|filled|duotone|gradient",
+    "strokeWeight": "...",
+    "cornerStyle": "...",
+    "suggestedLibrary": "...",
+    "description": "..."
+  }
+}
+
+PHOTOGRAPHY ANALYSIS:
+- lighting: Types of lighting visible in photos (e.g., "natural daylight", "soft studio", "dramatic shadows", "warm ambient", "bright and airy")
+- composition: How photos are composed (e.g., "centered subjects", "rule of thirds", "asymmetric balance", "overhead/flat lay", "close-up details")
+- mood: Overall emotional feel (e.g., "warm and inviting", "professional and clean", "cozy and intimate", "energetic and vibrant")
+- colorGrading: Color treatment of photos (e.g., "warm tones with high saturation", "cool and muted", "high contrast", "natural and unfiltered")
+- subjectMatter: What's shown in photos (e.g., "people in homes", "product close-ups", "lifestyle scenes", "workspaces", "hands doing tasks")
+- depthOfField: Focus style (e.g., "shallow with soft bokeh", "everything in focus", "selective focus on subjects")
+- description: A VIVID, DETAILED prose paragraph (3-5 sentences) describing exactly how to recreate this photography style. Include specific details about lighting, mood, colors, subjects, and atmosphere that would help an AI image generator produce matching images.
+
+GRAPHICS/ILLUSTRATION ANALYSIS:
+- illustrationStyle: Style of any illustrations or graphics (e.g., "flat geometric", "3D rendered", "hand-drawn sketchy", "minimalist line art", "isometric", "gradient-rich")
+- patterns: Background patterns or textures (e.g., "subtle dot grid", "geometric shapes", "organic blobs", "gradient meshes", "noise texture")
+- decorativeElements: Visual embellishments (e.g., "rounded blob shapes", "floating circles", "abstract lines", "gradient overlays", "glassmorphism effects")
+- mood: Mood of graphics (e.g., "playful and modern", "professional and minimal", "warm and approachable")
+- colorUsage: How colors are applied (e.g., "duotone with primary/secondary", "full brand palette", "monochromatic accents", "gradient transitions")
+- description: A VIVID prose paragraph (3-5 sentences) describing the graphic style to help recreate matching illustrations and decorative elements.
+
+ICON ANALYSIS:
+- style: Icon style - "outline" (stroked), "filled" (solid), "duotone" (two-tone), or "gradient"
+- strokeWeight: For outline icons, the stroke thickness (e.g., "1.5px", "2px", "3px bold")
+- cornerStyle: Corner treatment (e.g., "rounded", "sharp", "mixed")
+- suggestedLibrary: Best matching icon library (e.g., "Lucide", "Heroicons", "Phosphor", "Feather", "Tabler", "custom")
+- description: Brief description of icon characteristics and visual weight
+
+If no photography is visible, describe what photography WOULD match this design's aesthetic.
+If no illustrations are visible, describe what illustration style WOULD complement this design.
+
+Return ONLY the JSON object, no additional text.`;
+
+/**
  * Get all extraction prompts
  */
 export function getExtractionPrompts() {
@@ -215,5 +278,6 @@ export function getExtractionPrompts() {
     global: GLOBAL_DESIGN_PROMPT,
     sections: SECTIONS_PROMPT,
     components: COMPONENTS_PROMPT,
+    visualAssets: VISUAL_ASSETS_PROMPT,
   };
 }

@@ -1,12 +1,23 @@
 // Page Generator
 // Generates page.tsx files for each route defined in Site Plan
+// Supports both template-based and LLM-enhanced generation
 
 import { CodeGenInputs, GeneratedFile, urlToFilePath } from '@/types/codeGeneration';
 import { PageBrief, PageType } from '@/types/sitePlanner';
+import { callClaude } from '@/api/llm/anthropic';
+import { MODELS } from '@/api/llm/models';
+import { 
+	buildHomepagePrompt, 
+	buildPagePrompt, 
+	getModelForPageType,
+	cleanGeneratedCode 
+} from '../prompts';
 
 export interface GeneratorOptions {
 	onFile?: (file: GeneratedFile) => void;
 	abortSignal?: AbortSignal;
+	/** Use LLM to generate page content (requires Anthropic API key) */
+	useLLM?: boolean;
 }
 
 /**
@@ -16,7 +27,7 @@ export async function generatePageFiles(
 	inputs: CodeGenInputs,
 	options: GeneratorOptions = {}
 ): Promise<GeneratedFile[]> {
-	const { onFile, abortSignal } = options;
+	const { onFile, abortSignal, useLLM = false } = options;
 	const files: GeneratedFile[] = [];
 
 	const emit = (file: GeneratedFile) => {
@@ -26,14 +37,22 @@ export async function generatePageFiles(
 
 	if (abortSignal?.aborted) return files;
 
-	const { sitePlan, seoPackage, editorialContent, providerProfiles, comparisonData } = inputs;
+	const { sitePlan } = inputs;
 
 	// Generate each page based on its type
 	for (const page of sitePlan.pages) {
 		if (abortSignal?.aborted) break;
 
 		const filePath = urlToFilePath(page.url);
-		const content = generatePageContent(page, inputs);
+		let content: string;
+
+		if (useLLM) {
+			// Use LLM-based generation
+			content = await generatePageWithLLM(page, inputs);
+		} else {
+			// Use template-based generation
+			content = generatePageContent(page, inputs);
+		}
 
 		emit({
 			path: filePath,
@@ -44,6 +63,47 @@ export async function generatePageFiles(
 	}
 
 	return files;
+}
+
+/**
+ * Generate a page using LLM (Claude)
+ * Uses Opus for homepage, Haiku for other pages
+ */
+async function generatePageWithLLM(
+	page: PageBrief,
+	inputs: CodeGenInputs
+): Promise<string> {
+	const modelKey = getModelForPageType(page.type);
+	const modelConfig = MODELS[modelKey];
+	
+	if (!modelConfig) {
+		console.warn(`Model ${modelKey} not found, falling back to template`);
+		return generatePageContent(page, inputs);
+	}
+
+	// Build the appropriate prompt
+	const prompt = page.type === 'homepage'
+		? buildHomepagePrompt(inputs)
+		: buildPagePrompt(page, inputs);
+
+	try {
+		console.log(`Generating ${page.type} page with ${modelConfig.name}...`);
+		
+		const response = await callClaude(prompt, modelConfig.id);
+		const cleanedCode = cleanGeneratedCode(response);
+		
+		// Validate the response looks like valid code
+		if (!cleanedCode.includes('export') || !cleanedCode.includes('function') && !cleanedCode.includes('const')) {
+			console.warn(`LLM output for ${page.url} doesn't look valid, falling back to template`);
+			return generatePageContent(page, inputs);
+		}
+		
+		return cleanedCode;
+	} catch (error) {
+		console.error(`LLM generation failed for ${page.url}:`, error);
+		// Fall back to template-based generation
+		return generatePageContent(page, inputs);
+	}
 }
 
 /**

@@ -19,8 +19,9 @@ import { ColorPalettePreview } from './ColorPalettePreview';
 import { TypographyPreview } from './TypographyPreview';
 import { SectionsPreview } from './SectionsPreview';
 import { ComponentsPreview } from './ComponentsPreview';
+import { VisualAssetsPreview } from './VisualAssetsPreview';
 
-type PreviewTab = 'colors' | 'typography' | 'sections' | 'components';
+type PreviewTab = 'colors' | 'typography' | 'sections' | 'components' | 'visualAssets';
 
 interface BrandDesignNodeProps {
   node: BrandDesignNodeData;
@@ -100,7 +101,7 @@ export function BrandDesignNode({
     const { phase, passesComplete, currentPassName } = node.progress;
     if (phase === 'complete') return 'Complete';
     if (currentPassName) return currentPassName;
-    return `Pass ${passesComplete + 1} of 3`;
+    return `Pass ${passesComplete + 1} of 4`;
   };
 
   // Get confidence percentage
@@ -121,7 +122,7 @@ export function BrandDesignNode({
         </span>
         {node.progress && node.progress.passesComplete > 0 && (
           <div className="flex gap-1">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-all ${
@@ -318,11 +319,12 @@ export function BrandDesignNode({
           {showPreview && (
             <div className="flex flex-col gap-3 p-3 bg-slate-950/60 border border-slate-700/50 rounded-lg">
               {/* Tabs */}
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 <TabButton tab="colors" label="Colors" />
                 <TabButton tab="typography" label="Type" />
                 <TabButton tab="sections" label="Sections" />
                 <TabButton tab="components" label="UI" />
+                <TabButton tab="visualAssets" label="Visual" />
               </div>
 
               {/* Tab Content */}
@@ -338,6 +340,9 @@ export function BrandDesignNode({
                 )}
                 {activeTab === 'components' && (
                   <ComponentsPreview components={output.designSystem.components} />
+                )}
+                {activeTab === 'visualAssets' && output.designSystem.visualAssets && (
+                  <VisualAssetsPreview visualAssets={output.designSystem.visualAssets} />
                 )}
               </div>
             </div>

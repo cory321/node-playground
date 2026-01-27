@@ -32,6 +32,33 @@ export interface GeneratedFile {
 }
 
 // ============================================================================
+// GENERATED IMAGES
+// ============================================================================
+
+export type ImagePurpose =
+	| 'hero'
+	| 'section-background'
+	| 'feature-illustration'
+	| 'testimonial-background'
+	| 'cta-background'
+	| 'service-illustration'
+	| 'about-photo'
+	| 'decorative';
+
+export interface GeneratedImage {
+	/** File path in the generated project, e.g., "public/images/hero.webp" */
+	path: string;
+	/** Base64 data (without data URL prefix) for ZIP packaging */
+	data: string;
+	/** MIME type of the image */
+	mimeType: string;
+	/** Purpose of the image */
+	purpose: ImagePurpose;
+	/** Aspect ratio used */
+	aspectRatio: string;
+}
+
+// ============================================================================
 // CODEBASE METADATA
 // ============================================================================
 
@@ -57,6 +84,7 @@ export interface CodebaseMetadata {
 
 export interface GeneratedCodebase {
 	files: GeneratedFile[];
+	images: GeneratedImage[];
 	metadata: CodebaseMetadata;
 }
 
@@ -68,6 +96,7 @@ export type CodeGenerationPhase =
 	| 'preparing'
 	| 'routing'
 	| 'styling'
+	| 'images'
 	| 'content'
 	| 'assembling'
 	| 'validating'
@@ -180,6 +209,7 @@ export interface FileTreeNode {
 export function createEmptyCodebase(): GeneratedCodebase {
 	return {
 		files: [],
+		images: [],
 		metadata: {
 			generatedAt: new Date().toISOString(),
 			totalFiles: 0,
@@ -333,6 +363,7 @@ export function getPhaseLabel(phase: CodeGenerationPhase): string {
 		preparing: 'Preparing',
 		routing: 'Generating Routes',
 		styling: 'Generating Styles',
+		images: 'Generating Images',
 		content: 'Generating Pages',
 		assembling: 'Assembling Codebase',
 		validating: 'Validating',
@@ -348,7 +379,8 @@ export function getPhaseProgress(phase: CodeGenerationPhase): number {
 	const progress: Record<CodeGenerationPhase, number> = {
 		preparing: 0,
 		routing: 10,
-		styling: 20,
+		styling: 15,
+		images: 25,
 		content: 50,
 		assembling: 90,
 		validating: 95,

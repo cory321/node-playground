@@ -25,6 +25,7 @@ import {
 	Wand2,
 	Paintbrush,
 	Code2,
+	Copy,
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
 
@@ -49,6 +50,7 @@ interface ToolbarProps {
 	onAddBrandDesignNode: () => void;
 	onAddDataViewerNode: () => void;
 	onAddCodeGenerationNode: () => void;
+	onAddScreenshotReplicatorNode: () => void;
 	onOpenSettings: () => void;
 	onOpenSave: () => void;
 	onOpenLoad: () => void;
@@ -83,6 +85,7 @@ export function Toolbar({
 	onAddBrandDesignNode,
 	onAddDataViewerNode,
 	onAddCodeGenerationNode,
+	onAddScreenshotReplicatorNode,
 	onOpenSettings,
 	onOpenSave,
 	onOpenLoad,
@@ -256,6 +259,14 @@ export function Toolbar({
 					icon={<Code2 size={20} />}
 					label="Add Code Generation"
 					className="bg-emerald-700 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
+				/>
+
+				{/* Add Screenshot Replicator Node */}
+				<ToolbarButton
+					onClick={onAddScreenshotReplicatorNode}
+					icon={<Copy size={20} />}
+					label="Add Screenshot Replicator"
+					className="bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-500/20"
 				/>
 
 				<div className="h-6 w-px bg-slate-700 mx-1" />

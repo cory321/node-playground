@@ -18,6 +18,7 @@ import {
 	Wand2,
 	Paintbrush,
 	Code2,
+	Copy,
 	LucideIcon,
 } from 'lucide-react';
 import {
@@ -43,6 +44,7 @@ import {
 	BrandDesignNodeData,
 	DataViewerNodeData,
 	CodeGenerationNodeData,
+	ScreenshotReplicatorNodeData,
 	NODE_DEFAULTS,
 } from '@/types/nodes';
 
@@ -821,6 +823,8 @@ registry.set('code-generation', {
 		inputPageCount: 0,
 		outputFormat: 'files',
 		includeReadme: true,
+		useLLM: false,
+		generateImages: false,
 		progress: {
 			phase: 'preparing',
 			currentFile: null,
@@ -829,6 +833,51 @@ registry.set('code-generation', {
 			bytesGenerated: 0,
 		},
 		output: null,
+		lastGeneratedAt: null,
+	}),
+});
+
+// Register Screenshot Replicator node type
+// Analyzes a screenshot and replicates it as React/Tailwind code
+registry.set('screenshot-replicator', {
+	type: 'screenshot-replicator',
+	label: 'Screenshot Replicator',
+	icon: Copy,
+	color: NODE_DEFAULTS['screenshot-replicator'].color,
+	defaultWidth: NODE_DEFAULTS['screenshot-replicator'].width,
+	defaultHeight: NODE_DEFAULTS['screenshot-replicator'].height,
+	hasInputPort: true,
+	hasOutputPort: true,
+	createDefaultData: (
+		id: string,
+		x: number,
+		y: number,
+	): ScreenshotReplicatorNodeData => ({
+		id,
+		x,
+		y,
+		width: NODE_DEFAULTS['screenshot-replicator'].width,
+		height: NODE_DEFAULTS['screenshot-replicator'].height,
+		title: 'Screenshot Replicator',
+		color: NODE_DEFAULTS['screenshot-replicator'].color,
+		type: 'screenshot-replicator',
+		status: 'idle',
+		error: null,
+		inputScreenshotUrl: null,
+		analysis: null,
+		progress: {
+			phase: 'idle',
+			passesComplete: 0,
+			totalPasses: 6,
+			assetsGenerated: 0,
+			totalAssets: 0,
+			sectionsGenerated: 0,
+			totalSections: 0,
+			filesGenerated: 0,
+			bytesGenerated: 0,
+		},
+		output: null,
+		lastAnalyzedAt: null,
 		lastGeneratedAt: null,
 	}),
 });

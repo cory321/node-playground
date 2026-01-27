@@ -383,6 +383,15 @@ function App() {
 		if (node) setNodes((prev) => [...prev, node]);
 	}, [transform]);
 
+	const addScreenshotReplicatorNode = useCallback(() => {
+		const node = createNode(
+			'screenshot-replicator',
+			(window.innerWidth / 2 - transform.x - 240) / transform.scale,
+			(window.innerHeight / 2 - transform.y - 325) / transform.scale,
+		);
+		if (node) setNodes((prev) => [...prev, node]);
+	}, [transform]);
+
 	// Multi-port connection handlers for CategorySelectorNode
 	const handleOutputPortMouseDownWithPort = useCallback(
 		(e: React.MouseEvent, nodeId: string, portId: string) => {
@@ -659,6 +668,7 @@ function App() {
 				onAddBrandDesignNode={addBrandDesignNode}
 				onAddDataViewerNode={addDataViewerNode}
 				onAddCodeGenerationNode={addCodeGenerationNode}
+				onAddScreenshotReplicatorNode={addScreenshotReplicatorNode}
 				onOpenSettings={() => setShowSettingsModal(true)}
 				onOpenSave={() => setShowSaveModal(true)}
 				onOpenLoad={() => setShowLoadModal(true)}

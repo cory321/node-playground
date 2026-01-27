@@ -5,6 +5,7 @@ import {
 	CodeGenInputs,
 	GeneratedCodebase,
 	GeneratedFile,
+	GeneratedImage,
 	CodeGenerationProgress,
 	CodebaseMetadata,
 	calculateTotalBytes,
@@ -18,11 +19,16 @@ import { generatePageFiles } from './generators/pages';
 import { generateSEOFiles } from './generators/seo';
 import { generateDataFiles } from './generators/data';
 import { generateConfigFiles } from './generators/config';
+import { generateHomepageImages, extractBase64FromDataUrl } from './imageGeneration';
 
 export interface CodeGenOptions {
 	onProgress?: (progress: CodeGenerationProgress) => void;
 	abortSignal?: AbortSignal;
 	includeReadme?: boolean;
+	/** Generate images using Gemini Image 3 (requires Google API key) */
+	generateImages?: boolean;
+	/** Use LLM for page generation (Opus for homepage, Haiku for others) */
+	useLLM?: boolean;
 }
 
 /**
@@ -33,7 +39,7 @@ export async function generateNextjsSite(
 	inputs: CodeGenInputs,
 	options: CodeGenOptions = {}
 ): Promise<GeneratedCodebase> {
-	const { onProgress, abortSignal, includeReadme = true } = options;
+	const { onProgress, abortSignal, includeReadme = true, generateImages = false, useLLM = false } = options;
 
 	// Helper to check abort and report progress
 	const checkAbort = () => {
@@ -79,6 +85,7 @@ export async function generateNextjsSite(
 	}
 
 	const allFiles: GeneratedFile[] = [];
+	const allImages: GeneratedImage[] = [];
 	let bytesGenerated = 0;
 
 	// Estimate total files based on page count
@@ -128,7 +135,52 @@ export async function generateNextjsSite(
 		abortSignal,
 	});
 
-	// Phase 4: Content - Generate pages, layouts, components
+	// Phase 4: Images - Generate brand-matched images (optional)
+	if (generateImages) {
+		reportProgress(
+			'images',
+			'Generating homepage images...',
+			allFiles.length,
+			estimatedTotal,
+			bytesGenerated
+		);
+		checkAbort();
+
+		try {
+			const generatedImages = await generateHomepageImages(
+				inputs.brandDesign,
+				inputs.sitePlan,
+				(imageProgress) => {
+					reportProgress(
+						'images',
+						`Generating ${imageProgress.currentImage} (${imageProgress.current}/${imageProgress.total})...`,
+						allFiles.length,
+						estimatedTotal,
+						bytesGenerated
+					);
+				}
+			);
+
+			// Convert to the GeneratedImage format for ZIP packaging
+			for (const img of generatedImages) {
+				const extracted = extractBase64FromDataUrl(img.dataUrl);
+				if (extracted) {
+					allImages.push({
+						path: img.path,
+						data: extracted.data,
+						mimeType: extracted.mimeType,
+						purpose: img.purpose,
+						aspectRatio: img.aspectRatio,
+					});
+				}
+			}
+		} catch (error) {
+			console.error('Image generation failed:', error);
+			// Continue without images - they're optional
+		}
+	}
+
+	// Phase 5: Content - Generate pages, layouts, components
 	reportProgress(
 		'content',
 		'Generating pages...',
@@ -184,6 +236,7 @@ export async function generateNextjsSite(
 			);
 		},
 		abortSignal,
+		useLLM,
 	});
 
 	// Phase 5: Assembling - Generate SEO, data, and config files
@@ -278,6 +331,7 @@ export async function generateNextjsSite(
 
 	return {
 		files: allFiles,
+		images: allImages,
 		metadata,
 	};
 }

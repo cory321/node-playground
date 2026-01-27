@@ -185,6 +185,61 @@ export interface VisualEffects {
 }
 
 // ============================================
+// VISUAL ASSETS (Photography, Graphics, Icons)
+// ============================================
+
+export interface PhotographyStyle {
+  /** Lighting characteristics, e.g., ["natural", "soft", "dramatic"] */
+  lighting: string[];
+  /** Composition patterns, e.g., ["centered", "rule-of-thirds", "asymmetric"] */
+  composition: string[];
+  /** Overall mood, e.g., "warm and inviting" */
+  mood: string;
+  /** Color treatment, e.g., "high saturation, warm tones" */
+  colorGrading: string;
+  /** Types of subjects shown, e.g., ["people", "home interiors", "products"] */
+  subjectMatter: string[];
+  /** Depth of field style, e.g., "shallow with bokeh" */
+  depthOfField: string;
+  /** Vivid prose description for generating matching images */
+  description: string;
+}
+
+export interface GraphicsStyle {
+  /** Style of illustrations, e.g., "flat geometric", "3D rendered", "hand-drawn" */
+  illustrationStyle: string;
+  /** Background patterns used, e.g., ["subtle gradients", "geometric shapes"] */
+  patterns: string[];
+  /** Decorative elements, e.g., ["rounded corners", "soft shadows", "abstract blobs"] */
+  decorativeElements: string[];
+  /** Overall mood of graphics */
+  mood: string;
+  /** How colors are used in graphics, e.g., "duotone", "full color palette" */
+  colorUsage: string;
+  /** Vivid prose description for generating matching graphics */
+  description: string;
+}
+
+export interface IconStyle {
+  /** Icon style variant */
+  style: 'outline' | 'filled' | 'duotone' | 'gradient';
+  /** Stroke weight for outline icons, e.g., "1.5px", "2px" */
+  strokeWeight: string;
+  /** Corner treatment, e.g., "rounded", "sharp" */
+  cornerStyle: string;
+  /** Suggested icon library, e.g., "Lucide", "Heroicons", "Phosphor" */
+  suggestedLibrary: string;
+  /** Description of icon visual characteristics */
+  description: string;
+}
+
+export interface VisualAssets {
+  photography: PhotographyStyle;
+  graphics: GraphicsStyle;
+  icons: IconStyle;
+}
+
+// ============================================
 // COMPLETE DESIGN SYSTEM
 // ============================================
 
@@ -195,6 +250,7 @@ export interface DesignSystem {
   components: ComponentStyles;
   sections: SectionStyle[];
   effects?: VisualEffects;
+  visualAssets?: VisualAssets;
 }
 
 // ============================================
@@ -232,6 +288,7 @@ export interface ExtractionConfidence {
   typography: number;
   sections: number;
   components: number;
+  visualAssets: number;
   overall: number;
 }
 
@@ -242,6 +299,7 @@ export interface ExtractionMeta {
     global: boolean;
     sections: boolean;
     components: boolean;
+    visualAssets: boolean;
   };
   confidence: ExtractionConfidence;
   warnings?: string[];
@@ -280,6 +338,12 @@ export interface ComponentsResult {
   effects?: VisualEffects;
 }
 
+export interface VisualAssetsResult {
+  photography: PhotographyStyle;
+  graphics: GraphicsStyle;
+  icons: IconStyle;
+}
+
 // ============================================
 // EXTRACTION PROGRESS
 // ============================================
@@ -289,6 +353,7 @@ export type ExtractionPhase =
   | 'extracting-global'
   | 'extracting-sections'
   | 'extracting-components'
+  | 'extracting-visual-assets'
   | 'merging'
   | 'generating-tailwind'
   | 'complete';
@@ -296,6 +361,6 @@ export type ExtractionPhase =
 export interface ExtractionProgress {
   phase: ExtractionPhase;
   passesComplete: number;
-  totalPasses: 3;
+  totalPasses: 4;
   currentPassName?: string;
 }

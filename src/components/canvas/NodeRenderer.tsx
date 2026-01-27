@@ -25,6 +25,7 @@ import {
   isBrandDesignNode,
   isDataViewerNode,
   isCodeGenerationNode,
+  isScreenshotReplicatorNode,
 } from '@/types/nodes';
 import { Connection } from '@/types/connections';
 import { EnrichedProvider } from '@/types/enrichedProvider';
@@ -49,6 +50,7 @@ import { ImageSourceNode } from '../nodes/ImageSourceNode';
 import { BrandDesignNode } from '../nodes/BrandDesignNode';
 import { DataViewerNode } from '../nodes/DataViewerNode';
 import { CodeGenerationNode } from '../nodes/CodeGenerationNode';
+import { ScreenshotReplicatorNode } from '../nodes/ScreenshotReplicatorNode';
 import { SitePlannerOutput } from '@/types/sitePlanner';
 import { SEOOptimizedPackage } from '@/types/seoPackage';
 import { BrandDesignOutput } from '@/types/brandDesign';
@@ -716,6 +718,32 @@ export function NodeRenderer({
               connectingTo={connectingTo}
               getInputPortConnections={(portId) => getInputPortConnections(node.id, portId)}
               incomingData={getIncomingCodeGenerationData?.(node.id) ?? null}
+            />
+          );
+        }
+
+        if (isScreenshotReplicatorNode(node)) {
+          return (
+            <ScreenshotReplicatorNode
+              key={node.id}
+              node={node}
+              updateNode={updateNode}
+              deleteNode={deleteNode}
+              onMouseDown={(e) => onMouseDown(e, node)}
+              onResizeStart={(e) => onResizeStart(e, node)}
+              editingTitleId={editingTitleId}
+              setEditingTitleId={setEditingTitleId}
+              isConnectedInput={isConnectedInput(node.id)}
+              isConnectedOutput={isConnectedOutput(node.id)}
+              hoveredPort={hoveredPort}
+              setHoveredPort={setHoveredPort}
+              onInputPortMouseDown={(e) => onInputPortMouseDown(e, node.id)}
+              onInputPortMouseUp={() => onInputPortMouseUp(node.id)}
+              onOutputPortMouseDown={(e) => onOutputPortMouseDown(e, node.id)}
+              onOutputPortMouseUp={() => onOutputPortMouseUp(node.id)}
+              connectingFrom={connectingFrom}
+              connectingTo={connectingTo}
+              incomingData={getIncomingBrandDesignData?.(node.id) ?? null}
             />
           );
         }
