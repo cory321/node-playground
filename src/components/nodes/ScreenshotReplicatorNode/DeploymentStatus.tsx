@@ -20,7 +20,10 @@ interface DeploymentStatusProps {
 	isDeploying: boolean;
 }
 
-export function DeploymentStatus({ progress, isDeploying }: DeploymentStatusProps) {
+export function DeploymentStatus({
+	progress,
+	isDeploying,
+}: DeploymentStatusProps) {
 	const { phase, filesUploaded, totalFiles, deploymentUrl, error } = progress;
 
 	// Calculate progress percentage
@@ -29,7 +32,9 @@ export function DeploymentStatus({ progress, isDeploying }: DeploymentStatusProp
 			case 'idle':
 				return 0;
 			case 'uploading':
-				return totalFiles > 0 ? Math.round((filesUploaded / totalFiles) * 40) : 0;
+				return totalFiles > 0
+					? Math.round((filesUploaded / totalFiles) * 40)
+					: 0;
 			case 'creating':
 				return 45;
 			case 'building':
@@ -123,7 +128,9 @@ export function DeploymentStatus({ progress, isDeploying }: DeploymentStatusProp
 			{error && (
 				<div className="flex items-start gap-1.5 p-1.5 bg-red-500/10 border border-red-500/20 rounded">
 					<XCircle size={10} className="text-red-400 shrink-0 mt-0.5" />
-					<span className="text-[9px] text-red-300 leading-relaxed">{error}</span>
+					<span className="text-[9px] text-red-300 leading-relaxed">
+						{error}
+					</span>
 				</div>
 			)}
 		</div>

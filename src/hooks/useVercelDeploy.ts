@@ -31,7 +31,7 @@ export interface UseVercelDeployReturn {
 	deploy: (
 		codeFiles: GeneratedFile[],
 		assetFiles: GeneratedAsset[],
-		projectName?: string
+		projectName?: string,
 	) => Promise<VercelDeploymentResult>;
 	/** Cancel the current deployment */
 	cancel: () => void;
@@ -44,85 +44,95 @@ export interface UseVercelDeployReturn {
 // ============================================================================
 
 export function useVercelDeploy(): UseVercelDeployReturn {
-	const [progress, setProgress] = useState<DeployProgress>(createInitialDeployProgress());
+	const [progress, setProgress] = useState<DeployProgress>(
+		createInitialDeployProgress(),
+	);
 	const [isDeploying, setIsDeploying] = useState(false);
 	const [result, setResult] = useState<VercelDeploymentResult | null>(null);
-	
+
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	/**
 	 * Start a deployment to Vercel
 	 */
-	const deploy = useCallback(async (
-		codeFiles: GeneratedFile[],
-		assetFiles: GeneratedAsset[],
-		projectName?: string
-	): Promise<VercelDeploymentResult> => {
-		// Check if already deploying
-		if (isDeploying) {
-			throw new Error('Deployment already in progress');
-		}
+	const deploy = useCallback(
+		async (
+			codeFiles: GeneratedFile[],
+			assetFiles: GeneratedAsset[],
+			projectName?: string,
+		): Promise<VercelDeploymentResult> => {
+			// Check if already deploying
+			if (isDeploying) {
+				throw new Error('Deployment already in progress');
+			}
 
-		// Check configuration
-		if (!isVercelConfigured()) {
-			const error = 'Vercel not configured. Set VITE_VERCEL_TOKEN environment variable.';
-			setProgress({
-				...createInitialDeployProgress(),
-				phase: 'error',
-				error,
-			});
-			throw new Error(error);
-		}
-
-		// Reset state
-		setIsDeploying(true);
-		setResult(null);
-		setProgress(createInitialDeployProgress());
-
-		// Create abort controller
-		abortControllerRef.current = new AbortController();
-
-		try {
-			// Generate a unique project name if not provided
-			const name = projectName || `replicated-${Date.now().toString(36)}`;
-
-			const deploymentResult = await deployToVercel(
-				codeFiles,
-				assetFiles,
-				name,
-				{
-					onProgress: setProgress,
-					abortSignal: abortControllerRef.current.signal,
-					waitForReady: true,
-				}
-			);
-
-			setResult(deploymentResult);
-			setIsDeploying(false);
-			return deploymentResult;
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : 'Deployment failed';
-			
-			// Don't treat abort as an error
-			if (errorMessage === 'Upload aborted' || errorMessage === 'Deployment polling aborted') {
+			// Check configuration
+			if (!isVercelConfigured()) {
+				const error =
+					'Vercel not configured. Set VITE_VERCEL_TOKEN environment variable.';
 				setProgress({
 					...createInitialDeployProgress(),
-					phase: 'idle',
-				});
-			} else {
-				setProgress(prev => ({
-					...prev,
 					phase: 'error',
-					error: errorMessage,
-				}));
+					error,
+				});
+				throw new Error(error);
 			}
-			
-			setIsDeploying(false);
-			throw error;
-		} finally {
-			abortControllerRef.current = null;
-		}
-	}, [isDeploying]);
+
+			// Reset state
+			setIsDeploying(true);
+			setResult(null);
+			setProgress(createInitialDeployProgress());
+
+			// Create abort controller
+			abortControllerRef.current = new AbortController();
+
+			try {
+				// Generate a unique project name if not provided
+				const name = projectName || `replicated-${Date.now().toString(36)}`;
+
+				const deploymentResult = await deployToVercel(
+					codeFiles,
+					assetFiles,
+					name,
+					{
+						onProgress: setProgress,
+						abortSignal: abortControllerRef.current.signal,
+						waitForReady: true,
+					},
+				);
+
+				setResult(deploymentResult);
+				setIsDeploying(false);
+				return deploymentResult;
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : 'Deployment failed';
+
+				// Don't treat abort as an error
+				if (
+					errorMessage === 'Upload aborted' ||
+					errorMessage === 'Deployment polling aborted'
+				) {
+					setProgress({
+						...createInitialDeployProgress(),
+						phase: 'idle',
+					});
+				} else {
+					setProgress((prev) => ({
+						...prev,
+						phase: 'error',
+						error: errorMessage,
+					}));
+				}
+
+				setIsDeploying(false);
+				throw error;
+			} finally {
+				abortControllerRef.current = null;
+			}
+		},
+		[isDeploying],
+	);
 
 	/**
 	 * Cancel the current deployment
