@@ -159,7 +159,7 @@ export function CategoriesPreview({
 
       {/* Categories List */}
       {expanded && (
-        <div className="max-h-64 overflow-y-auto scrollbar-themed">
+        <div className="max-h-[600px] overflow-y-auto scrollbar-themed">
           {/* Tier 1 */}
           {tier1.length > 0 && (
             <div className="px-1 py-1">

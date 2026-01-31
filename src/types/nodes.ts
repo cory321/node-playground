@@ -123,6 +123,22 @@ export interface CategoryAnalysisResult {
 	verdict: 'strong' | 'maybe' | 'skip';
 	reasoning: string;
 	fromCache: boolean;
+	// New validation fields
+	validationFlags?: string[];
+	trendConfidence?: number;
+	demandConfidence?: 'high' | 'medium' | 'low' | 'unvalidated';
+	spikeDetected?: boolean;
+	trendDirection?: 'growing' | 'declining' | 'flat' | 'volatile';
+	// Manual override - user has validated this category manually
+	manualOverride?: boolean;
+}
+
+// Validation summary for a research scan
+export interface ValidationSummary {
+	totalFlags: number;
+	criticalWarnings: string[];
+	trendsValidated: number;
+	overriddenCount: number; // How many categories user manually validated
 }
 
 // Triage result for quick scan
@@ -164,6 +180,8 @@ export interface DeepResearchNodeData extends BaseNodeData {
 	categoryResults: CategoryAnalysisResult[];
 	topOpportunities: CategoryAnalysisResult[];
 	skipList: { category: string; reason: string }[];
+	// Validation summary
+	validationSummary: ValidationSummary | null;
 	// Progress
 	progress: ResearchProgress;
 	// Timestamps

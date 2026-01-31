@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Play,
   Square,
-  Loader2,
   AlertCircle,
-  MapPin,
   Link2Off,
   CheckCircle2,
   Zap,
+  AlertTriangle,
+  ShieldCheck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { DeepResearchNodeData, HoveredPort, ResearchScanMode } from '@/types/nodes';
 import { BaseNode } from '../base';
@@ -76,6 +78,7 @@ export function DeepResearchNode({
 }: DeepResearchNodeProps) {
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Get city profile from incoming demographics
   const { profile } = useCityProfile({
@@ -88,9 +91,10 @@ export function DeepResearchNode({
   const { tier1, tier2, conditional } = getCategoriesToScan(profile, DEFAULT_SCAN_CONFIG);
 
   // Research hook
-  const { runTriageScan, runFullScan, stopScan, isScanning, hasApiKey } =
+  const { runTriageScan, runFullScan, stopScan, setManualOverride, isScanning, hasApiKey } =
     useDeepResearch({
       nodeId: node.id,
+      node,
       updateNode,
     });
 
@@ -138,6 +142,175 @@ export function DeepResearchNode({
   const hasResults =
     node.status === 'success' &&
     (node.categoryResults.length > 0 || node.triageResult);
+
+  // Generate comprehensive report for clipboard
+  const generateComprehensiveReport = useCallback(() => {
+    const lines: string[] = [];
+    const city = incomingData?.city || node.inputCity || 'Unknown';
+    const state = incomingData?.state || node.inputState || '';
+    const location = state ? `${city}, ${state}` : city;
+    const scanDate = node.lastScanAt ? new Date(node.lastScanAt).toLocaleString() : 'Unknown';
+
+    // Header
+    lines.push(`# Deep Research Report: ${location}`);
+    lines.push(`Generated: ${scanDate}`);
+    lines.push('');
+
+    // City Profile
+    if (node.cityTraits && node.cityTraits.length > 0) {
+      lines.push('## City Profile');
+      lines.push(`**Location:** ${location}`);
+      lines.push(`**Traits:** ${node.cityTraits.join(', ')}`);
+      lines.push('');
+    }
+
+    // Validation Summary
+    if (node.validationSummary) {
+      lines.push('## Validation Summary');
+      lines.push(`- **Categories Validated:** ${node.validationSummary.trendsValidated}`);
+      lines.push(`- **Total Flags:** ${node.validationSummary.totalFlags}`);
+      lines.push(`- **Manually Overridden:** ${node.validationSummary.overriddenCount || 0}`);
+      if (node.validationSummary.criticalWarnings.length > 0) {
+        lines.push('');
+        lines.push('### Critical Warnings');
+        node.validationSummary.criticalWarnings.forEach((warning) => {
+          lines.push(`- ${warning}`);
+        });
+      }
+      lines.push('');
+    }
+
+    // Scan Statistics
+    lines.push('## Scan Statistics');
+    lines.push(`- **Total Categories Scanned:** ${node.categoryResults.length}`);
+    lines.push(`- **API Searches Used:** ${node.progress.searchesUsed}`);
+    lines.push(`- **Cache Hits:** ${node.progress.cacheHits}`);
+    lines.push('');
+
+    // Top Opportunities
+    if (node.topOpportunities.length > 0) {
+      lines.push('## Top Opportunities');
+      node.topOpportunities.forEach((opp, idx) => {
+        lines.push(`### ${idx + 1}. ${opp.category}`);
+        lines.push(`- **SERP Score:** ${opp.serpScore}/10`);
+        lines.push(`- **SERP Quality:** ${opp.serpQuality}`);
+        lines.push(`- **Competition:** ${opp.competition}`);
+        lines.push(`- **Lead Value:** ${opp.leadValue}`);
+        lines.push(`- **Urgency:** ${opp.urgency}`);
+        lines.push(`- **Reasoning:** ${opp.reasoning}`);
+        if (opp.trendDirection) {
+          lines.push(`- **Trend Direction:** ${opp.trendDirection}`);
+        }
+        if (opp.demandConfidence) {
+          lines.push(`- **Demand Confidence:** ${opp.demandConfidence}`);
+        }
+        lines.push('');
+      });
+    }
+
+    // All Category Results
+    lines.push('## All Category Analysis');
+    lines.push('');
+
+    // Group by verdict
+    const strongCategories = node.categoryResults.filter((r) => r.verdict === 'strong');
+    const maybeCategories = node.categoryResults.filter((r) => r.verdict === 'maybe');
+    const skipCategories = node.categoryResults.filter((r) => r.verdict === 'skip');
+
+    if (strongCategories.length > 0) {
+      lines.push('### Strong Opportunities (Recommended)');
+      lines.push('');
+      strongCategories.forEach((result) => {
+        lines.push(`#### ${result.category}`);
+        lines.push(`- **Tier:** ${result.tier}`);
+        lines.push(`- **Verdict:** ✅ STRONG`);
+        lines.push(`- **SERP Score:** ${result.serpScore}/10`);
+        lines.push(`- **SERP Quality:** ${result.serpQuality}`);
+        lines.push(`- **Competition:** ${result.competition}`);
+        lines.push(`- **Lead Value:** ${result.leadValue}`);
+        lines.push(`- **Urgency:** ${result.urgency}`);
+        lines.push(`- **Reasoning:** ${result.reasoning}`);
+        if (result.trendDirection) lines.push(`- **Trend:** ${result.trendDirection}`);
+        if (result.demandConfidence) lines.push(`- **Demand Confidence:** ${result.demandConfidence}`);
+        if (result.trendConfidence) lines.push(`- **Trend Confidence:** ${result.trendConfidence}%`);
+        if (result.spikeDetected) lines.push(`- **⚠️ Spike Detected:** Yes`);
+        if (result.validationFlags && result.validationFlags.length > 0) {
+          lines.push(`- **Validation Flags:** ${result.validationFlags.join('; ')}`);
+        }
+        if (result.manualOverride) lines.push(`- **Manually Validated:** Yes`);
+        lines.push('');
+      });
+    }
+
+    if (maybeCategories.length > 0) {
+      lines.push('### Maybe Categories (Needs Validation)');
+      lines.push('');
+      maybeCategories.forEach((result) => {
+        lines.push(`#### ${result.category}`);
+        lines.push(`- **Tier:** ${result.tier}`);
+        lines.push(`- **Verdict:** ⚠️ MAYBE`);
+        lines.push(`- **SERP Score:** ${result.serpScore}/10`);
+        lines.push(`- **SERP Quality:** ${result.serpQuality}`);
+        lines.push(`- **Competition:** ${result.competition}`);
+        lines.push(`- **Lead Value:** ${result.leadValue}`);
+        lines.push(`- **Urgency:** ${result.urgency}`);
+        lines.push(`- **Reasoning:** ${result.reasoning}`);
+        if (result.trendDirection) lines.push(`- **Trend:** ${result.trendDirection}`);
+        if (result.demandConfidence) lines.push(`- **Demand Confidence:** ${result.demandConfidence}`);
+        if (result.trendConfidence) lines.push(`- **Trend Confidence:** ${result.trendConfidence}%`);
+        if (result.spikeDetected) lines.push(`- **⚠️ Spike Detected:** Yes`);
+        if (result.validationFlags && result.validationFlags.length > 0) {
+          lines.push(`- **Validation Flags:** ${result.validationFlags.join('; ')}`);
+        }
+        if (result.manualOverride) lines.push(`- **Manually Validated:** Yes`);
+        lines.push('');
+      });
+    }
+
+    if (skipCategories.length > 0) {
+      lines.push('### Skip Categories (Not Recommended)');
+      lines.push('');
+      skipCategories.forEach((result) => {
+        lines.push(`#### ${result.category}`);
+        lines.push(`- **Tier:** ${result.tier}`);
+        lines.push(`- **Verdict:** ❌ SKIP`);
+        lines.push(`- **SERP Score:** ${result.serpScore}/10`);
+        lines.push(`- **Reasoning:** ${result.reasoning}`);
+        if (result.validationFlags && result.validationFlags.length > 0) {
+          lines.push(`- **Validation Flags:** ${result.validationFlags.join('; ')}`);
+        }
+        lines.push('');
+      });
+    }
+
+    // Skip List Summary
+    if (node.skipList.length > 0) {
+      lines.push('## Skip List Summary');
+      lines.push('');
+      node.skipList.forEach((item) => {
+        lines.push(`- **${item.category}:** ${item.reason}`);
+      });
+      lines.push('');
+    }
+
+    // Footer
+    lines.push('---');
+    lines.push(`*Report generated by Deep Research Node*`);
+
+    return lines.join('\n');
+  }, [node, incomingData]);
+
+  // Copy report to clipboard
+  const handleCopyReport = useCallback(async () => {
+    const report = generateComprehensiveReport();
+    try {
+      await navigator.clipboard.writeText(report);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy report:', err);
+    }
+  }, [generateComprehensiveReport]);
 
   // Loading overlay
   const loadingOverlay = (
@@ -351,10 +524,65 @@ export function DeepResearchNode({
       {/* Full Scan Results */}
       {node.scanMode === 'full' && node.categoryResults.length > 0 && (
         <>
+          {/* Validation Summary Banner */}
+          {!isScanning && node.validationSummary && (
+            <div
+              className={`flex items-start gap-2 px-3 py-2 rounded-lg border ${
+                node.validationSummary.criticalWarnings.length > 0
+                  ? 'bg-amber-500/10 border-amber-500/20'
+                  : 'bg-emerald-500/10 border-emerald-500/20'
+              }`}
+            >
+              {node.validationSummary.criticalWarnings.length > 0 ? (
+                <>
+                  <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-amber-300 font-medium mb-1">
+                      Validation Warnings Detected
+                    </div>
+                    <div className="space-y-0.5">
+                      {node.validationSummary.criticalWarnings.slice(0, 2).map((warning, i) => (
+                        <div key={i} className="text-[10px] text-amber-200/70 truncate">
+                          • {warning.split(':')[0]}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      {node.validationSummary.trendsValidated} categories trend-validated
+                    </div>
+                    {(node.validationSummary.overriddenCount ?? 0) > 0 && (
+                      <div className="text-[10px] text-blue-400 mt-1">
+                        {node.validationSummary.overriddenCount} manually validated
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-xs text-emerald-300">
+                      All trends validated — no anomalies detected
+                    </div>
+                    <div className="text-[10px] text-slate-500">
+                      {node.validationSummary.trendsValidated} categories checked
+                      {(node.validationSummary.overriddenCount ?? 0) > 0 && (
+                        <span className="text-blue-400 ml-1">
+                          ({node.validationSummary.overriddenCount} manually validated)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <ResultsTable
             results={node.categoryResults}
             currentCategory={node.progress.currentCategory}
             isScanning={isScanning}
+            onManualOverride={setManualOverride}
           />
 
           {!isScanning && (
@@ -362,6 +590,30 @@ export function DeepResearchNode({
               topOpportunities={node.topOpportunities}
               skipList={node.skipList}
             />
+          )}
+
+          {/* Copy Comprehensive Report Button */}
+          {!isScanning && node.categoryResults.length > 0 && (
+            <button
+              onClick={handleCopyReport}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                copySuccess
+                  ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
+                  : 'bg-slate-800/80 border border-slate-700/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-600/50'
+              }`}
+            >
+              {copySuccess ? (
+                <>
+                  <Check size={14} />
+                  Report Copied!
+                </>
+              ) : (
+                <>
+                  <Copy size={14} />
+                  Copy Comprehensive Report
+                </>
+              )}
+            </button>
           )}
         </>
       )}

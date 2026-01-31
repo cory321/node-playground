@@ -143,6 +143,7 @@ export function NodesProvider({ children, initialNodes = DEFAULT_NODES }: NodesP
         categoryResults: [],
         topOpportunities: [],
         skipList: [],
+        validationSummary: null,
         progress: {
           currentCategory: null,
           completedCount: 0,

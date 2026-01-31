@@ -11,6 +11,30 @@ export interface SerpSignals {
   totalResults: number;
 }
 
+// Trend validation data structure (matches validation.ts TrendValidation)
+export interface TrendValidationData {
+  isStable: boolean;
+  spikeDetected: boolean;
+  spikeRatio: number;
+  averageInterest: number;
+  maxInterest: number;
+  minInterest: number;
+  medianInterest: number;
+  trendDirection: 'growing' | 'declining' | 'flat' | 'volatile';
+  confidenceScore: number;
+  flags: string[];
+  monthlyData: { date: string; value: number }[];
+  fromCache: boolean;
+}
+
+// Trend cache entry
+export interface CachedTrendData {
+  keyword: string;
+  geo: string;
+  data: TrendValidationData;
+  createdAt: Date;
+}
+
 // Cache entry with signals
 export interface CachedSerpData {
   query: string;
@@ -202,5 +226,165 @@ export async function invalidateCityCache(city: string): Promise<boolean> {
   } catch (err) {
     console.error('Error invalidating cache:', err);
     return false;
+  }
+}
+
+// ==================== Trend Validation Cache (30-day expiry) ====================
+
+// Default trend cache expiry in days
+const DEFAULT_TREND_CACHE_EXPIRY_DAYS = 30;
+
+/**
+ * Generate cache key for trend data
+ */
+function getTrendCacheKey(keyword: string, geo: string): string {
+  return `trend:${keyword.toLowerCase().trim()}:${geo.toLowerCase()}`;
+}
+
+/**
+ * Get cached trend validation data
+ * Returns null if not found or expired (30 days)
+ */
+export async function getCachedTrendValidation(
+  keyword: string,
+  geo: string = 'US'
+): Promise<TrendValidationData | null> {
+  if (!hasSupabase() || !supabase) {
+    return null;
+  }
+
+  try {
+    const cacheKey = getTrendCacheKey(keyword, geo);
+
+    const { data, error } = await supabase
+      .from('trend_cache')
+      .select('*')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    // Check if cache is still valid (30 days)
+    const cachedAt = new Date(data.created_at);
+    const now = new Date();
+    const daysDiff = (now.getTime() - cachedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daysDiff >= DEFAULT_TREND_CACHE_EXPIRY_DAYS) {
+      return null; // Expired
+    }
+
+    return {
+      ...data.data,
+      fromCache: true,
+    } as TrendValidationData;
+  } catch (err) {
+    console.error('Error fetching cached trend:', err);
+    return null;
+  }
+}
+
+/**
+ * Store trend validation data in cache
+ */
+export async function setCachedTrendValidation(
+  keyword: string,
+  geo: string,
+  data: TrendValidationData
+): Promise<boolean> {
+  if (!hasSupabase() || !supabase) {
+    return false;
+  }
+
+  try {
+    const cacheKey = getTrendCacheKey(keyword, geo);
+
+    const { error } = await supabase.from('trend_cache').upsert(
+      {
+        cache_key: cacheKey,
+        keyword: keyword.toLowerCase().trim(),
+        geo: geo.toLowerCase(),
+        data: data,
+        created_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'cache_key',
+      }
+    );
+
+    if (error) {
+      console.error('Error caching trend:', error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error caching trend:', err);
+    return false;
+  }
+}
+
+/**
+ * Get trend cache statistics
+ */
+export async function getTrendCacheStats(): Promise<{
+  totalCached: number;
+  expiredCount: number;
+}> {
+  if (!hasSupabase() || !supabase) {
+    return { totalCached: 0, expiredCount: 0 };
+  }
+
+  try {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - DEFAULT_TREND_CACHE_EXPIRY_DAYS);
+
+    const { count: totalCached } = await supabase
+      .from('trend_cache')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: expiredCount } = await supabase
+      .from('trend_cache')
+      .select('*', { count: 'exact', head: true })
+      .lt('created_at', expiryDate.toISOString());
+
+    return {
+      totalCached: totalCached || 0,
+      expiredCount: expiredCount || 0,
+    };
+  } catch (err) {
+    console.error('Error getting trend cache stats:', err);
+    return { totalCached: 0, expiredCount: 0 };
+  }
+}
+
+/**
+ * Clean expired trend cache entries
+ */
+export async function cleanExpiredTrendCache(): Promise<number> {
+  if (!hasSupabase() || !supabase) {
+    return 0;
+  }
+
+  try {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() - DEFAULT_TREND_CACHE_EXPIRY_DAYS);
+
+    const { data, error } = await supabase
+      .from('trend_cache')
+      .delete()
+      .lt('created_at', expiryDate.toISOString())
+      .select('id');
+
+    if (error) {
+      console.error('Error cleaning trend cache:', error);
+      return 0;
+    }
+
+    return data?.length || 0;
+  } catch (err) {
+    console.error('Error cleaning trend cache:', err);
+    return 0;
   }
 }

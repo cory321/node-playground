@@ -187,6 +187,7 @@ registry.set('research', {
 		categoryResults: [],
 		topOpportunities: [],
 		skipList: [],
+		validationSummary: null,
 		progress: {
 			currentCategory: null,
 			completedCount: 0,

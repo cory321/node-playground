@@ -5,8 +5,13 @@ export {
   cleanExpiredCache,
   getCacheStats,
   invalidateCityCache,
+  // Trend cache functions
+  getCachedTrendValidation,
+  setCachedTrendValidation,
+  getTrendCacheStats,
+  cleanExpiredTrendCache,
 } from './cache';
-export type { SerpSignals, CachedSerpData } from './cache';
+export type { SerpSignals, CachedSerpData, CachedTrendData } from './cache';
 
 export {
   TIER1_CATEGORIES,
@@ -38,8 +43,37 @@ export type {
   LeadEconomics,
 } from './tiers';
 
-export { analyzeSerpWithClaude, generateTriageAnalysis } from './analyzer';
+export { analyzeSerpWithClaude, generateTriageAnalysis, analyzeSerpWithValidation } from './analyzer';
 export type { CategoryAnalysis, TriageResult } from './analyzer';
+
+// Validation and scoring exports
+export {
+  fetchTrendValidation,
+  fetchDemandSignals,
+  fetchFullSerpSearch,
+  validateMarketKeyword,
+  validateMarketKeywordWithSerpData,
+  hasValidationApi,
+  hasCriticalTrendFlags,
+  getValidationSummary,
+} from './validation';
+export type {
+  TrendValidation,
+  SerpDemandSignals,
+  SerpSearchResponse,
+} from './validation';
+
+export {
+  calculateValidatedGapScore,
+  shouldSkipCategory,
+  getValidatedUrgency,
+  combineWithLegacyScore,
+} from './validatedScoring';
+export type {
+  MarketValidation,
+  ValidatedGapScore,
+  ScoringContext,
+} from './validatedScoring';
 
 import { SerpSignals, getCachedSerp, setCachedSerp } from './cache';
 import { isAggregatorDomain } from './tiers';

@@ -1,6 +1,12 @@
 import { callLLM } from '@/api/llm';
 import { SerpSignals } from './cache';
 import { AGGREGATOR_DOMAINS } from './tiers';
+import type { TrendValidation, SerpDemandSignals } from './validation';
+import {
+  calculateValidatedGapScore,
+  type ValidatedGapScore,
+  type MarketValidation,
+} from './validatedScoring';
 
 // Category analysis result
 export interface CategoryAnalysis {
@@ -14,6 +20,13 @@ export interface CategoryAnalysis {
   verdict: 'strong' | 'maybe' | 'skip';
   reasoning: string; // 1-2 sentence explanation
   fromCache: boolean;
+  // New validation fields
+  validationFlags?: string[];
+  trendConfidence?: number;
+  demandConfidence?: 'high' | 'medium' | 'low' | 'unvalidated';
+  spikeDetected?: boolean;
+  trendDirection?: 'growing' | 'declining' | 'flat' | 'volatile';
+  validatedScore?: ValidatedGapScore;
 }
 
 // Quick triage result
@@ -73,6 +86,63 @@ Respond with ONLY this JSON format:
   "urgency": "Low|Medium|High",
   "verdict": "strong|maybe|skip",
   "reasoning": "1-2 sentence explanation"
+}`;
+
+// Enhanced prompt with trend validation signals
+const VALIDATED_CATEGORY_ANALYSIS_PROMPT = `You are a local service market analyst. Analyze the following SERP and TREND signals for a service category. Pay special attention to trend validation warnings.
+
+## Category: {category}
+## Location: {city}, {state}
+
+## SERP Signals
+- Top 5 Organic Domains: {topDomains}
+- Aggregator Positions (1-5): {aggregatorPositions}
+- Local Service Ads: {hasLSAs} (Count: {lsaCount})
+- Local Pack Results: {localPackCount}
+- Paid Ads: {adCount}
+- Total Results: {totalResults}
+
+## Trend Validation Signals
+- Trend Stable: {trendStable}
+- Spike Detected: {spikeDetected} (Ratio: {spikeRatio}x median)
+- Average Interest: {avgInterest}/100
+- Trend Direction: {trendDirection}
+- Trend Confidence: {trendConfidence}%
+- Trend Flags: {trendFlags}
+
+## Demand Signals
+- Organic Results Found: {organicResultsCount}
+- LSAs Present: {demandLsaPresent} (Count: {demandLsaCount})
+- Paid Ads: {demandAdsCount}
+- Local Pack Reviews (total): {localPackReviews}
+- Established Businesses (50+ reviews): {establishedBusinesses}
+- Related Searches: {relatedSearchesCount}
+- People Also Ask: {paaCount}
+- Demand Confidence: {demandConfidence}
+
+## CRITICAL: If spike is detected or trend is declining, be skeptical of the opportunity.
+
+## Analysis Task
+Based on ALL signals (SERP + Trend + Demand), provide:
+
+1. **SERP Quality** (Weak/Medium/Strong)
+2. **Competition** (Low/Medium/High)
+3. **Lead Value** estimate
+4. **Urgency** (Low/Medium/High)
+5. **Verdict**: 
+   - strong: Validated demand with weak competition
+   - maybe: Some signals positive but needs validation
+   - skip: Spike detected, declining trend, or unvalidated demand
+
+Respond with ONLY this JSON format:
+{
+  "serpQuality": "Weak|Medium|Strong",
+  "serpScore": 1-10,
+  "competition": "Low|Medium|High",
+  "leadValue": "$XX-YY",
+  "urgency": "Low|Medium|High",
+  "verdict": "strong|maybe|skip",
+  "reasoning": "1-2 sentence explanation including any validation concerns"
 }`;
 
 const TRIAGE_ANALYSIS_PROMPT = `You are a local service market analyst. Analyze these quick triage signals for a city to determine if it's worth a full market scan.
@@ -303,4 +373,165 @@ export async function generateTriageAnalysis(
       worthFullScan,
     };
   }
+}
+
+/**
+ * Analyze SERP signals with trend validation using Claude
+ * This is the enhanced version that incorporates trend and demand signals
+ */
+export async function analyzeSerpWithValidation(
+  category: string,
+  city: string,
+  state: string | null,
+  signals: SerpSignals,
+  trendValidation: TrendValidation,
+  demandSignals: SerpDemandSignals,
+  tier: 'tier1' | 'tier2' | 'tier3' | 'conditional' = 'tier1'
+): Promise<CategoryAnalysis> {
+  // Build the enhanced prompt with all validation signals
+  // IMPORTANT: Use demandSignals (fresh data from serp-search) for overlapping fields
+  // to avoid contradictions with stale cached data from signals (legacy serp-proxy)
+  const prompt = VALIDATED_CATEGORY_ANALYSIS_PROMPT
+    .replace('{category}', category)
+    .replace('{city}', city)
+    .replace('{state}', state || 'Unknown')
+    .replace('{topDomains}', signals.topOrganicDomains.join(', ') || 'None')
+    .replace(
+      '{aggregatorPositions}',
+      signals.aggregatorPositions.length > 0
+        ? signals.aggregatorPositions.join(', ')
+        : 'None'
+    )
+    // Use demandSignals for these fields to ensure consistency with Demand Signals section
+    .replace('{hasLSAs}', demandSignals.lsaPresent ? 'Yes' : 'No')
+    .replace('{lsaCount}', demandSignals.lsaCount.toString())
+    .replace('{localPackCount}', demandSignals.localPackCount.toString())
+    .replace('{adCount}', demandSignals.paidAdsCount.toString())
+    .replace('{totalResults}', signals.totalResults.toString())
+    // Trend validation signals
+    .replace('{trendStable}', trendValidation.isStable ? 'Yes' : 'No')
+    .replace('{spikeDetected}', trendValidation.spikeDetected ? 'YES ⚠️' : 'No')
+    .replace('{spikeRatio}', trendValidation.spikeRatio.toFixed(1))
+    .replace('{avgInterest}', trendValidation.averageInterest.toFixed(0))
+    .replace('{trendDirection}', trendValidation.trendDirection.toUpperCase())
+    .replace('{trendConfidence}', trendValidation.confidenceScore.toString())
+    .replace('{trendFlags}', trendValidation.flags.join('; ') || 'None')
+    // Demand signals
+    .replace('{organicResultsCount}', (demandSignals.organicResultsCount ?? 0).toString())
+    .replace('{demandLsaPresent}', demandSignals.lsaPresent ? 'Yes' : 'No')
+    .replace('{demandLsaCount}', demandSignals.lsaCount.toString())
+    .replace('{demandAdsCount}', demandSignals.paidAdsCount.toString())
+    .replace('{localPackReviews}', demandSignals.localPackTotalReviews.toString())
+    .replace('{establishedBusinesses}', demandSignals.establishedBusinesses.toString())
+    .replace('{relatedSearchesCount}', demandSignals.relatedSearchesCount.toString())
+    .replace('{paaCount}', demandSignals.peopleAlsoAskCount.toString())
+    .replace('{demandConfidence}', demandSignals.demandConfidence.toUpperCase());
+
+  try {
+    const response = await callLLM('claude-haiku', prompt);
+
+    // Parse JSON from response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No JSON found in response');
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Calculate validated gap score
+    const validation: MarketValidation = {
+      serpSignals: demandSignals,
+      trendValidation,
+    };
+
+    const validatedScore = calculateValidatedGapScore(validation, {
+      category,
+      city,
+      state,
+      tier,
+      aggregatorDominance: calculateAggregatorDominance(signals),
+      hasLSAs: demandSignals.lsaPresent, // Use fresh data from demandSignals
+    });
+
+    // Override verdict based on validation
+    let finalVerdict = parsed.verdict || 'maybe';
+    if (trendValidation.spikeDetected) {
+      // If spike detected, never return 'strong'
+      if (finalVerdict === 'strong') {
+        finalVerdict = 'maybe';
+      }
+    }
+    if (validatedScore.verdict === 'SKIP') {
+      finalVerdict = 'skip';
+    }
+
+    return {
+      category,
+      tier,
+      serpQuality: parsed.serpQuality || 'Medium',
+      serpScore: parsed.serpScore || 5,
+      competition: parsed.competition || 'Medium',
+      leadValue: parsed.leadValue || '$25-50',
+      urgency: parsed.urgency || 'Medium',
+      verdict: finalVerdict,
+      reasoning: parsed.reasoning || 'Unable to determine',
+      fromCache: false,
+      // New validation fields
+      validationFlags: validatedScore.flags,
+      trendConfidence: trendValidation.confidenceScore,
+      demandConfidence: demandSignals.demandConfidence,
+      spikeDetected: trendValidation.spikeDetected,
+      trendDirection: trendValidation.trendDirection,
+      validatedScore,
+    };
+  } catch (err) {
+    console.error('Validated Claude analysis error:', err);
+
+    // Fallback to heuristic-based analysis with validation overlay
+    const baseAnalysis = analyzeWithHeuristics(category, signals, tier);
+
+    // Calculate validated score even in fallback
+    const validation: MarketValidation = {
+      serpSignals: demandSignals,
+      trendValidation,
+    };
+
+    const validatedScore = calculateValidatedGapScore(validation, {
+      category,
+      city,
+      state,
+      tier,
+      aggregatorDominance: calculateAggregatorDominance(signals),
+      hasLSAs: demandSignals.lsaPresent, // Use fresh data from demandSignals
+    });
+
+    // Override verdict based on validation
+    let finalVerdict = baseAnalysis.verdict;
+    if (trendValidation.spikeDetected && finalVerdict === 'strong') {
+      finalVerdict = 'maybe';
+    }
+    if (validatedScore.verdict === 'SKIP') {
+      finalVerdict = 'skip';
+    }
+
+    return {
+      ...baseAnalysis,
+      verdict: finalVerdict,
+      reasoning: `${baseAnalysis.reasoning} ${validatedScore.flags.length > 0 ? '⚠️ ' + validatedScore.flags[0] : ''}`,
+      validationFlags: validatedScore.flags,
+      trendConfidence: trendValidation.confidenceScore,
+      demandConfidence: demandSignals.demandConfidence,
+      spikeDetected: trendValidation.spikeDetected,
+      trendDirection: trendValidation.trendDirection,
+      validatedScore,
+    };
+  }
+}
+
+/**
+ * Helper to calculate aggregator dominance percentage
+ */
+function calculateAggregatorDominance(signals: SerpSignals): number {
+  if (signals.topOrganicDomains.length === 0) return 0;
+  return (signals.aggregatorPositions.length / signals.topOrganicDomains.length) * 100;
 }
